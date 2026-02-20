@@ -33,8 +33,8 @@
       ansible.builtin.debug:
         msg: >-
           Converging base layer on {{ inventory_hostname }}
-          ({{ ansible_distribution }} {{ ansible_distribution_version | default('') }},
-          pkg_mgr={{ ansible_pkg_mgr }})
+          ({{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] | default('') }},
+          pkg_mgr={{ ansible_facts['pkg_mgr'] }})
       tags: [always]
 
   roles:
