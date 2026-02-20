@@ -3,21 +3,53 @@
 #
 # monitoring role - main tasks
 # Installs monitoring packages, optionally enables collectd, creates a local
-# monitoring log directory, and sets up a cron job for reflexive system stats
-# logging (the system monitors itself).
+# monitoring log directory, and sets up a systemd timer for reflexive system
+# stats logging (the system monitors itself).
+#
+# On Silverblue/Atomic: uses rpm-ostree for package installation.
 ---
 
-- name: Install monitoring packages
+- name: Detect if host is Silverblue/Atomic (immutable OS)
+  ansible.builtin.stat:
+    path: /run/ostree-booted
+  register: _ostree_booted_mon
+
+- name: Install monitoring packages via rpm-ostree (Silverblue/Atomic)
+  ansible.builtin.command:
+    cmd: "rpm-ostree install --idempotent --allow-inactive {{ item }}"
+  loop: "{{ monitoring_packages }}"
+  register: _rpm_ostree_mon
+  changed_when: "'Installing:' in _rpm_ostree_mon.stdout or 'Importing:' in _rpm_ostree_mon.stdout"
+  when:
+    - _ostree_booted_mon.stat.exists
+    - monitoring_packages | length > 0
+  become: true
+
+- name: Install monitoring packages (mutable Fedora)
   ansible.builtin.package:
     name: "{{ monitoring_packages }}"
     state: present
-  when: monitoring_packages | length > 0
+  when:
+    - not _ostree_booted_mon.stat.exists
+    - monitoring_packages | length > 0
 
-- name: Install collectd when enabled
+- name: Install collectd via rpm-ostree (Silverblue/Atomic)
+  ansible.builtin.command:
+    cmd: "rpm-ostree install --idempotent --allow-inactive collectd"
+  register: _rpm_ostree_collectd
+  changed_when: "'Installing:' in _rpm_ostree_collectd.stdout or 'Importing:' in _rpm_ostree_collectd.stdout"
+  when:
+    - _ostree_booted_mon.stat.exists
+    - monitoring_enable_collectd | bool
+  become: true
+
+- name: Install collectd (mutable Fedora)
   ansible.builtin.package:
     name: collectd
     state: present
-  when: monitoring_enable_collectd | bool
+  when:
+    - not _ostree_booted_mon.stat.exists
+    - monitoring_enable_collectd | bool
 
 - name: Enable and start collectd service
   ansible.builtin.systemd:
@@ -57,10 +89,47 @@
         echo ""
       } >> "${LOGFILE}"
 
-- name: Set up cron job for reflexive system stats logging
-  ansible.builtin.cron:
-    name: "infrastructure-reflexive-stats"
-    minute: "*/15"
-    job: "/usr/local/bin/log-system-stats.sh"
-    user: root
-    state: present
+- name: Deploy systemd timer for reflexive stats logging
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/infra-stats.service
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # SPDX-License-Identifier: PMPL-1.0-or-later
+      # Managed by Ansible - infrastructure-automation
+      [Unit]
+      Description=Reflexive infrastructure stats logger
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/bin/log-system-stats.sh
+  become: true
+
+- name: Deploy systemd timer unit
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/infra-stats.timer
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # SPDX-License-Identifier: PMPL-1.0-or-later
+      # Managed by Ansible - infrastructure-automation
+      [Unit]
+      Description=Run infrastructure stats logger every 15 minutes
+
+      [Timer]
+      OnBootSec=5min
+      OnUnitActiveSec=15min
+
+      [Install]
+      WantedBy=timers.target
+  become: true
+
+- name: Enable and start infra-stats timer
+  ansible.builtin.systemd:
+    name: infra-stats.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  become: true

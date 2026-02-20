@@ -6,10 +6,19 @@
 # and validates syntax before finalizing changes.
 ---
 
-- name: Ensure sudo is installed
+- name: Detect if host is Silverblue/Atomic (immutable OS)
+  ansible.builtin.stat:
+    path: /run/ostree-booted
+  register: _ostree_booted_sudo
+  tags:
+    - sudo_config
+    - detect
+
+- name: Ensure sudo is installed (mutable Fedora only)
   ansible.builtin.dnf:
     name: sudo
     state: present
+  when: not _ostree_booted_sudo.stat.exists
   become: true
   tags:
     - sudo_config

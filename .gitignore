@@ -39,3 +39,4 @@ sync_report*.txt
 # Logs
 *.log
 logs/
+__pycache__/

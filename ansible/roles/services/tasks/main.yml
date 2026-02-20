@@ -32,7 +32,7 @@
   ansible.builtin.set_fact:
     managed_services_applied:
       services: "{{ managed_services | map(attribute='name') | list }}"
-      timestamp: "{{ ansible_date_time.iso8601 }}"
+      timestamp: "{{ now(utc=true).isoformat() }}"
     cacheable: true
   tags:
     - services

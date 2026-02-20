@@ -63,9 +63,11 @@ managed_services:
   - name: sshd
     enabled: true
     state: started
-  - name: crond
-    enabled: true
-    state: started
+  # crond not available on Silverblue — uses systemd timers instead
+  # Uncomment on mutable Fedora if cronie is installed:
+  # - name: crond
+  #   enabled: true
+  #   state: started
 
 # ── Firewall ──────────────────────────────────────────────────
 firewall_backend: firewalld
@@ -102,14 +104,14 @@ hosts_entries:
 
 # ── Containers (Podman) ──────────────────────────────────────
 podman_rootless: true
-podman_containers:
-  # Example: uncomment to deploy nginx
-  # - name: infra-nginx
-  #   image: docker.io/library/nginx:alpine
-  #   state: started
-  #   ports:
-  #     - "8080:80"
-  #   restart_policy: always
+# Uncomment and populate to deploy containers:
+# podman_containers:
+#   - name: infra-nginx
+#     image: docker.io/library/nginx:alpine
+#     state: started
+#     ports:
+#       - "8080:80"
+#     restart_policy: always
 
 # ── Development ───────────────────────────────────────────────
 dev_tools:

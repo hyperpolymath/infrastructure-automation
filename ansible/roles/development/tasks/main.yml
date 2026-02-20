@@ -9,7 +9,7 @@
 
 - name: Determine primary user home directory
   ansible.builtin.set_fact:
-    dev_user_home: "{{ ansible_env.HOME | default('/home/' + ansible_user_id) }}"
+    dev_user_home: "/home/{{ primary_user }}"
 
 - name: Check if asdf is already installed
   ansible.builtin.stat:
@@ -22,7 +22,8 @@
     dest: "{{ dev_user_home }}/.asdf"
     version: master
     depth: 1
-  become: false
+  become: true
+  become_user: "{{ primary_user }}"
   when: not dev_asdf_installed.stat.exists
 
 - name: Check which asdf plugins are already installed
@@ -31,7 +32,8 @@
   register: dev_asdf_plugin_list
   changed_when: false
   failed_when: false
-  become: false
+  become: true
+  become_user: "{{ primary_user }}"
 
 - name: Install asdf language plugins
   ansible.builtin.command:
@@ -47,7 +49,8 @@
   when:
     - item.install_method == "asdf"
     - item.name not in (dev_asdf_plugin_list.stdout_lines | default([]))
-  become: false
+  become: true
+  become_user: "{{ primary_user }}"
 
 - name: Create development workspace directory
   ansible.builtin.file:
@@ -62,7 +65,8 @@
     dest: "{{ dev_user_home }}/Documents/hyperpolymath-repos"
     state: link
     force: false
-  become: false
+  become: true
+  become_user: "{{ primary_user }}"
   failed_when: false
 
 - name: Configure git user name for primary user
@@ -70,26 +74,29 @@
     cmd: git config --global user.name "Jonathan D.A. Jewell"
   register: dev_git_name_result
   changed_when: false
-  become: false
+  become: true
+  become_user: "{{ primary_user }}"
 
 - name: Configure git user email for primary user
   ansible.builtin.command:
     cmd: git config --global user.email "jonathan.jewell@open.ac.uk"
   register: dev_git_email_result
   changed_when: false
-  become: false
+  become: true
+  become_user: "{{ primary_user }}"
 
 - name: Configure git default branch name
   ansible.builtin.command:
     cmd: git config --global init.defaultBranch main
   register: dev_git_branch_result
   changed_when: false
-  become: false
+  become: true
+  become_user: "{{ primary_user }}"
 
 - name: Deploy .editorconfig in home directory
   ansible.builtin.copy:
     dest: "{{ dev_user_home }}/.editorconfig"
-    owner: "{{ ansible_user_id }}"
+    owner: "{{ primary_user }}"
     mode: "0644"
     force: false
     content: |
@@ -128,4 +135,3 @@
       [justfile]
       indent_style = space
       indent_size = 4
-  become: false

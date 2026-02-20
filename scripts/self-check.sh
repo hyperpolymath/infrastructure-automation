@@ -44,9 +44,16 @@ fi
 # ── Package Checks ────────────────────────────────────────────
 [ "$JSON_MODE" != "--json" ] && info "Checking packages..."
 
+IS_SILVERBLUE=false
+[ -f /run/ostree-booted ] && IS_SILVERBLUE=true
+
 for pkg in vim git htop curl wget tree jq tmux; do
     if command -v "$pkg" &>/dev/null; then
         pass "Package: $pkg installed"
+    elif $IS_SILVERBLUE && rpm -q "$pkg" &>/dev/null; then
+        pass "Package: $pkg layered (reboot pending)"
+    elif $IS_SILVERBLUE && rpm-ostree status 2>/dev/null | grep -q "$pkg"; then
+        pass "Package: $pkg layered (reboot pending)"
     else
         fail "Package: $pkg" "not found in PATH"
     fi
@@ -62,7 +69,7 @@ fi
 # ── Service Checks ────────────────────────────────────────────
 [ "$JSON_MODE" != "--json" ] && info "Checking services..."
 
-for svc in sshd crond; do
+for svc in sshd; do
     if systemctl is-active --quiet "$svc" 2>/dev/null; then
         pass "Service: $svc running"
     elif systemctl is-active --quiet "${svc}.service" 2>/dev/null; then

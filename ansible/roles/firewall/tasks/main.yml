@@ -4,12 +4,24 @@
 # tasks/main.yml - Configure firewalld on Fedora hosts.
 # Ensures firewalld is installed and running, sets the default zone,
 # adds allowed services and ports, and reloads the firewall via handler.
+#
+# On Silverblue/Atomic: firewalld is part of the base image, so the
+# install step is skipped.
 ---
 
-- name: Ensure firewalld is installed
+- name: Detect if host is Silverblue/Atomic (immutable OS)
+  ansible.builtin.stat:
+    path: /run/ostree-booted
+  register: _ostree_booted_fw
+  tags:
+    - firewall
+    - detect
+
+- name: Ensure firewalld is installed (mutable Fedora only)
   ansible.builtin.dnf:
     name: firewalld
     state: present
+  when: not _ostree_booted_fw.stat.exists
   become: true
   tags:
     - firewall

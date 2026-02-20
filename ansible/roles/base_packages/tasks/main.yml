@@ -23,7 +23,7 @@
 
 - name: Install base packages via rpm-ostree (Silverblue/Atomic)
   ansible.builtin.command:
-    cmd: "rpm-ostree install --idempotent {{ item }}"
+    cmd: "rpm-ostree install --idempotent --allow-inactive {{ item }}"
   loop: "{{ base_packages }}"
   register: _rpm_ostree_result
   changed_when: "'Installing:' in _rpm_ostree_result.stdout or 'Importing:' in _rpm_ostree_result.stdout"
@@ -50,7 +50,7 @@
     base_packages_installed:
       packages: "{{ base_packages }}"
       method: "{{ 'rpm-ostree' if (_is_silverblue | bool) else package_manager }}"
-      timestamp: "{{ ansible_date_time.iso8601 }}"
+      timestamp: "{{ now(utc=true).isoformat() }}"
     cacheable: true
   tags:
     - base_packages

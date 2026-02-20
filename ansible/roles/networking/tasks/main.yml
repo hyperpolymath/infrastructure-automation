@@ -10,7 +10,7 @@
   ansible.builtin.lineinfile:
     path: /etc/hosts
     regexp: "^{{ item.ip | regex_escape() }}\\s+"
-    line: "{{ item.ip }}    {{ item.names }}"
+    line: "{{ item.ip }}    {{ item.names | join(' ') }}"
     state: present
     backup: true
   loop: "{{ hosts_entries }}"

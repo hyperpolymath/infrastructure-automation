@@ -5,12 +5,21 @@
 # Ensures podman is installed, enables the podman socket for rootless usage,
 # manages containers via the containers.podman collection, and cleans up
 # containers marked as absent.
+#
+# On Silverblue/Atomic: podman is part of the base image, so the
+# install step is skipped.
 ---
 
-- name: Ensure podman is installed
+- name: Detect if host is Silverblue/Atomic (immutable OS)
+  ansible.builtin.stat:
+    path: /run/ostree-booted
+  register: _ostree_booted_podman
+
+- name: Ensure podman is installed (mutable Fedora only)
   ansible.builtin.package:
     name: podman
     state: present
+  when: not _ostree_booted_podman.stat.exists
 
 - name: Enable podman socket for rootless containers
   ansible.builtin.systemd:
