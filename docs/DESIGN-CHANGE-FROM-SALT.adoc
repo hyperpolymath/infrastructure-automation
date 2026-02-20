@@ -1,0 +1,351 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+= Design Change: SaltStack to Ansible + Terraform
+Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>
+:revdate: 2026-02-20
+:toc:
+:toclevels: 3
+:sectnums:
+
+== Executive Summary
+
+This document records the design decision to migrate all infrastructure
+automation from **SaltStack** to **Ansible** (configuration management) and
+**Terraform** (container provisioning). The decision was driven by operational
+failures, architectural mismatches with Fedora Silverblue's immutable OS model,
+and the desire for a simpler, more maintainable automation stack.
+
+This is not a rewrite for the sake of novelty. SaltStack was evaluated in
+production and found to be fundamentally unsuitable for our target platform.
+
+== Problem Statement
+
+=== SaltStack on Fedora Silverblue: Structural Failures
+
+SaltStack was designed for mutable Linux distributions where a persistent
+`salt-minion` daemon communicates with a `salt-master` over ZeroMQ. This
+architecture collides with Fedora Silverblue in several irreconcilable ways:
+
+1. **No native package installation.** Silverblue uses `rpm-ostree` for package
+   layering, not `dnf`. Salt's `pkg.installed` state cannot call `rpm-ostree`
+   natively. Every package operation required custom execution modules or
+   `cmd.run` wrappers — defeating Salt's declarative model.
+
+2. **Immutable filesystem.** Salt expects to write minion configuration to
+   `/etc/salt/`, deploy states to `/srv/salt/`, and manage files across the
+   root filesystem. On Silverblue, `/usr` is read-only and `/etc` changes are
+   layered. Salt's file management model assumes mutability.
+
+3. **Containerised Salt as a workaround fails.** Running Salt inside a Podman
+   container (to avoid layering it into the OS) creates a permissions maze:
+   the containerised minion cannot manage host services, users, or files
+   without extensive bind mounts and privilege escalation — negating the
+   security benefits of containerisation.
+
+4. **ZeroMQ dependency.** Salt requires ZeroMQ libraries, which must be layered
+   into the immutable OS or maintained inside a toolbox. This adds ongoing
+   maintenance burden for a component that provides no user-visible value.
+
+5. **Single-host overhead.** Salt's master/minion architecture is designed for
+   fleets. For a single workstation, the PKI infrastructure, ZeroMQ bus,
+   and event system are pure overhead.
+
+=== Operational Evidence
+
+During evaluation (February 2026), the following failures were documented:
+
+- `salt-minion` failed to start inside Podman due to `/proc` and `/sys` access
+  restrictions in rootless mode
+- `pkg.installed` states returned errors because `atomic_container` is not a
+  recognised package manager backend in Salt
+- Custom `rpm-ostree` execution modules required writing and maintaining Python
+  code outside of Salt's standard module ecosystem
+- File states targeting `/etc/` conflicted with Silverblue's `ostree` layering
+- Pillar data worked, but the overhead of maintaining master+minion for a
+  single host was disproportionate to the benefit
+
+== Decision
+
+=== What We Chose
+
+[cols="1,2,1"]
+|===
+| Tool | Responsibility | Coverage
+
+| **Ansible**
+| Configuration management: packages, users, files, services, firewall, sudo,
+  monitoring, networking, Silverblue-specific operations (rpm-ostree, Flatpak,
+  toolbox), developer environment setup
+| ~90% of automation
+
+| **Terraform**
+| Container provisioning: declarative Podman container lifecycle via the
+  Docker-compatible API socket (kreuzwerker/docker provider)
+| ~10% of automation
+|===
+
+=== Why Ansible
+
+- **Agentless.** No daemon, no PKI, no ZeroMQ. Uses SSH (already hardened and
+  available). On localhost, uses `ansible_connection: local` — zero network
+  overhead.
+- **Silverblue-aware.** Roles detect `/run/ostree-booted` and switch between
+  `rpm-ostree` and `dnf` automatically. No custom execution modules needed.
+- **Declarative YAML.** States are expressed as YAML playbooks — same language,
+  simpler semantics than Salt's Jinja-heavy SLS files.
+- **Massive ecosystem.** 100+ vendor-maintained collections (Ansible Galaxy).
+  `containers.podman`, `ansible.posix`, `community.general` cover our needs
+  out of the box.
+- **Industry standard.** Red Hat's primary automation tool. Long-term support
+  is guaranteed.
+
+=== Why Terraform (for containers only)
+
+- **Declarative lifecycle.** Terraform's plan/apply model gives preview-before-change
+  for container infrastructure.
+- **State tracking.** Terraform state files track which containers exist, enabling
+  drift detection and clean teardown.
+- **Not used for configuration management.** Terraform cannot manage packages,
+  users, files, or services. It provisions infrastructure — in our case,
+  Podman containers via the Docker-compatible socket.
+
+=== Why Not Terraform for Everything
+
+Terraform is an infrastructure provisioner, not a configuration manager. It
+cannot:
+
+- Install OS packages or manage rpm-ostree layers
+- Create user accounts or manage SSH keys
+- Deploy configuration files with templating
+- Enable/disable systemd services
+- Configure firewall rules declaratively
+- Set up sudo rules with syntax validation
+
+These are configuration management tasks, and Ansible handles them natively.
+
+== What Was Lost
+
+[cols="1,1,1"]
+|===
+| Capability | Salt | Ansible Equivalent
+
+| Real-time event bus
+| Salt Event Bus (ZeroMQ pub/sub)
+| **Not native.** Use Event-Driven Ansible (ansible-rulebook), systemd
+  path/timer units, or StackStorm for event-driven automation. For a single
+  workstation, systemd timers are sufficient and already deployed.
+
+| Reactor (event → action)
+| Salt Reactor
+| **Event-Driven Ansible (EDA)** provides equivalent functionality. We have no
+  current use case requiring real-time event reactions.
+
+| Persistent agent
+| Salt Minion (daemon)
+| **Intentionally removed.** Agentless is a security and maintenance advantage.
+  No daemon to crash, update, or secure.
+
+| Remote execution speed
+| ZeroMQ (sub-millisecond)
+| SSH (~100ms handshake). Irrelevant for single-host workstation use.
+
+| Mine / Grain sharing
+| Salt Mine, Grains
+| Ansible facts + fact caching (JSON file cache, 1-hour TTL). Equivalent
+  for our use case.
+|===
+
+**Net assessment:** Nothing of operational value was lost. The capabilities
+that Salt provides uniquely (event bus, reactor) were not in use and are not
+needed for workstation management.
+
+== What Was Gained
+
+=== Dependability
+
+- **No daemon failures.** Salt Minion crashes required manual intervention.
+  Ansible runs are stateless — a failed run can be safely re-executed.
+- **Idempotent by design.** Every task checks current state before acting.
+  Re-running the playbook produces zero changes when the system is converged.
+- **No network dependencies.** Localhost connection means no ZeroMQ port
+  conflicts, no firewall rules for minion communication, no master availability
+  requirements.
+
+=== Security
+
+- **Reduced attack surface.** No persistent root-level daemon. No open ports
+  for master communication. No PKI infrastructure to compromise.
+- **No agent supply chain.** Salt Minion pulls modules from the master at
+  runtime. Ansible playbooks are local files under version control — the
+  entire automation surface is auditable in git.
+- **Least privilege.** Ansible uses `become` selectively. Tasks that don't
+  need root run as the primary user. Salt Minion runs as root at all times.
+
+=== Performance
+
+- **Faster convergence.** Ansible applies all roles in a single SSH session
+  (or local connection). Salt requires minion→master→minion round trips for
+  state compilation.
+- **Lower resource usage.** No persistent daemon consuming memory and CPU.
+  Ansible runs only when invoked.
+
+=== Interoperability
+
+- **Hybrid Automation Router (HAR).** Our in-house IaC translation tool
+  (ambientops/hybrid-automation-router) has a functional Ansible parser and
+  transformer. Ansible playbooks can be programmatically analysed, converted,
+  and routed through HAR's semantic graph.
+- **Standard YAML.** Ansible playbooks are parseable by any YAML tool. Salt
+  SLS files require Jinja rendering before they can be parsed, making
+  static analysis significantly harder.
+
+=== Accessibility
+
+- **Lower learning curve.** Ansible's YAML-only syntax is simpler than Salt's
+  Jinja+YAML+Python stack. New contributors can read and modify playbooks
+  without learning Salt's state/pillar/grain/reactor concepts.
+- **Better documentation.** Ansible's documentation (docs.ansible.com) is
+  comprehensive and actively maintained. Salt's documentation has known gaps,
+  particularly for newer platforms.
+
+== Architecture
+
+=== Layer Model
+
+The automation is organised in convergence layers, each building on the
+previous:
+
+----
+┌─────────────────────────────────────────────────────────────┐
+│  5. Development    — asdf, git config, .editorconfig        │
+├─────────────────────────────────────────────────────────────┤
+│  4. Containers     — Silverblue (rpm-ostree, Flatpak,       │
+│                      toolbox), Podman containers            │
+├─────────────────────────────────────────────────────────────┤
+│  3. Monitoring     — System stats, logging, timers          │
+├─────────────────────────────────────────────────────────────┤
+│  2. Security       — Firewall (firewalld), sudo config      │
+├─────────────────────────────────────────────────────────────┤
+│  1. Base           — Packages, users, files, services, net  │
+└─────────────────────────────────────────────────────────────┘
+                        Ansible (configuration)
+
+┌─────────────────────────────────────────────────────────────┐
+│  Container Provisioning — Podman containers via Terraform    │
+└─────────────────────────────────────────────────────────────┘
+                        Terraform (provisioning)
+----
+
+=== Reflexive Design Principle
+
+The system inspects its own state:
+
+- **Callback plugin** (`reflexive_reporter.py`) records every task's outcome
+  to `/tmp/ansible-reflexive-report.json`
+- **Self-check script** (`scripts/self-check.sh`) compares desired configuration
+  against actual system state without running Ansible
+- **Fact caching** preserves discovered state between runs for drift detection
+- **Systemd timer** (`infra-stats.timer`) logs system metrics every 15 minutes
+
+=== Homoiconic Design Principle
+
+The configuration describes itself:
+
+- **Group variables** (`group_vars/all.yml`) are the single source of truth.
+  Change a value there, and the system converges to match.
+- **Role defaults** document every parameter with its type and purpose
+- **Role metadata** (`meta/main.yml`) declares dependencies, platforms, and
+  minimum Ansible versions
+- **Playbook comments** explain the layer model and role ordering
+
+== Event-Driven Automation (Future Reference)
+
+If real-time event-driven automation is ever needed, these are the viable
+alternatives to Salt Reactor:
+
+[cols="1,2,1"]
+|===
+| Tool | Description | Suitability
+
+| **Event-Driven Ansible (EDA)**
+| Red Hat's `ansible-rulebook` watches event sources (webhooks, logs, Kafka,
+  Prometheus alerts, file changes) and triggers existing Ansible playbooks.
+  Runs as a persistent service.
+| Best fit — uses our existing playbooks
+
+| **systemd path/timer units**
+| Built into the OS. `PathChanged=` watches files/directories and triggers
+  service units. We already use timers for stats logging.
+| Already in use — zero additional infrastructure
+
+| **StackStorm**
+| Open-source IFTTT for infrastructure. Event sensors → rules → action chains.
+  Mature, used in large-scale operations. Heavier than EDA.
+| Overkill for single workstation
+
+| **NATS JetStream**
+| Lightweight pub/sub messaging. Could serve as an event backbone for HAR.
+  Rust SDK available.
+| Future consideration for distributed setup
+
+| **inotifywait / watchman**
+| Filesystem-level event triggers. Lightweight, scriptable.
+| Good for file-watching use cases
+|===
+
+For our current single-workstation setup, **systemd timers + periodic Ansible
+runs** provide sufficient automation. Event-Driven Ansible is the recommended
+upgrade path if real-time reactions become necessary.
+
+== Migration Completeness
+
+All Salt functionality has been mapped to Ansible roles:
+
+[cols="1,1,1"]
+|===
+| Salt State | Ansible Role | Status
+
+| `pkg.installed` | `base_packages` | Complete
+| `user.present` | `users` | Complete
+| `file.managed` | `files_managed` | Complete
+| `service.running` | `services` | Complete
+| `firewalld` states | `firewall` | Complete
+| Custom sudo states | `sudo_config` | Complete
+| N/A (new) | `monitoring` | Complete
+| N/A (new) | `networking` | Complete
+| N/A (new) | `silverblue` | Complete
+| N/A (new) | `podman_containers` | Complete
+| N/A (new) | `development` | Complete
+|===
+
+== Hybrid Automation Router Integration
+
+The **Hybrid Automation Router (HAR)** at
+`ambientops/hybrid-automation-router` is an Elixir application that translates
+between IaC formats via a platform-agnostic semantic graph intermediate
+representation.
+
+HAR has functional parsers and transformers for Ansible, Salt, and Terraform.
+It could theoretically be used to:
+
+1. **Validate** our Ansible playbooks by parsing them into the semantic graph
+   and checking for anti-patterns
+2. **Convert** any remaining Salt states automatically
+3. **Visualise** infrastructure operations via its Phoenix LiveView dashboard
+
+Current HAR status is 45% complete (PoC phase). The Ansible parser and
+transformer are functional (~60% each). Integration is documented in
+`.machine_readable/ECOSYSTEM.scm` but no live code wiring exists yet.
+
+When HAR reaches 1.0, it will provide a programmatic bridge for analysing
+and transforming the infrastructure-automation playbooks.
+
+== References
+
+- `docs/ARCHITECTURE.adoc` — Full architecture documentation
+- `docs/MIGRATION-FROM-SALT.adoc` — Step-by-step migration guide with
+  Salt→Ansible code examples
+- `docs/DECISION-LOG.adoc` — Architectural Decision Records (ADRs)
+- `docs/QUICKSTART.adoc` — Getting started guide
+- `.machine_readable/META.scm` — Machine-readable ADRs
+- `.machine_readable/ECOSYSTEM.scm` — Ecosystem relationships (HAR, OPSM)
