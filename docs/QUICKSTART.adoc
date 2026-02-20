@@ -1,0 +1,166 @@
+= Quickstart — infrastructure-automation
+Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>
+v1.0.0, 2026-02-20
+:toc:
+:toc-title: Contents
+// SPDX-License-Identifier: PMPL-1.0-or-later
+
+== 3-Step Start
+
+[source,bash]
+----
+# 1. Bootstrap (installs Ansible + Terraform + collections)
+./scripts/bootstrap.sh
+
+# 2. Customise (edit variables to match your system)
+vim ansible/inventory/group_vars/all.yml
+
+# 3. Apply (configure your system)
+just apply
+----
+
+That's it. Your system is now managed by Ansible.
+
+== Prerequisites
+
+* Fedora Silverblue 42+ (or any Fedora with dnf)
+* Python 3.11+
+* Internet access (for package installation)
+
+The bootstrap script handles everything else.
+
+== Common Operations
+
+=== Check what would change (dry run)
+
+[source,bash]
+----
+just check
+----
+
+This shows every change Ansible would make without actually making it.
+
+=== Apply all configuration
+
+[source,bash]
+----
+just apply
+----
+
+=== Apply only specific concerns
+
+[source,bash]
+----
+# Only security (firewall + sudo)
+just apply-tags security
+
+# Only packages
+just apply-tags base_packages
+
+# Only containers
+just apply-tags containers
+----
+
+=== Inspect current state (reflexive self-check)
+
+[source,bash]
+----
+just self-check
+----
+
+This runs `scripts/self-check.sh` which validates:
+
+* Are expected packages installed?
+* Are expected services running?
+* Is the firewall configured correctly?
+* Are managed containers running?
+
+=== Deploy containers with Terraform
+
+[source,bash]
+----
+# Copy and edit the example config
+cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+vim terraform/terraform.tfvars
+
+# Preview changes
+just tf-plan
+
+# Apply changes
+just tf-apply
+----
+
+=== View the reflexive report
+
+After any Ansible run, inspect the self-observation report:
+
+[source,bash]
+----
+just report
+----
+
+== Directory Overview
+
+[source,text]
+----
+infrastructure-automation/
+├── ansible/
+│   ├── ansible.cfg           ← Ansible settings
+│   ├── inventory/
+│   │   ├── hosts.yml         ← Which hosts to manage
+│   │   └── group_vars/
+│   │       ├── all.yml       ← Variables for all hosts (EDIT THIS)
+│   │       └── silverblue.yml← Silverblue-specific overrides
+│   ├── playbooks/
+│   │   └── site.yml          ← Master playbook (runs everything)
+│   └── roles/                ← Modular automation (11 roles)
+├── terraform/
+│   ├── main.tf               ← Container provisioning
+│   ├── variables.tf          ← Container definitions
+│   └── terraform.tfvars.example ← Example config (copy to .tfvars)
+├── scripts/
+│   ├── bootstrap.sh          ← First-time setup
+│   ├── self-check.sh         ← State validation
+│   └── migrate-from-salt.sh  ← Salt migration helper
+├── docs/                     ← You are here
+└── justfile                  ← Task runner (replaces make)
+----
+
+== Troubleshooting
+
+=== "Permission denied" on local connection
+
+Ansible needs sudo access. Ensure your user is in the `wheel` group:
+
+[source,bash]
+----
+sudo usermod -aG wheel $USER
+----
+
+=== "No module named ansible"
+
+Run the bootstrap script:
+
+[source,bash]
+----
+./scripts/bootstrap.sh
+----
+
+=== Terraform can't connect to Podman
+
+Enable the Podman socket:
+
+[source,bash]
+----
+systemctl --user enable --now podman.socket
+export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock
+----
+
+=== rpm-ostree changes need reboot
+
+On Silverblue, package changes via rpm-ostree require a reboot:
+
+[source,bash]
+----
+sudo systemctl reboot
+----

@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# development role - default variables
+# Defines development tools managed by asdf, repository paths, and workspace
+# configuration for the primary development user.
+---
+
+# List of development tools to install via asdf. Each item has:
+#   name:            Language/tool name (must match an asdf plugin)
+#   install_method:  Currently only "asdf" is supported
+dev_tools:
+  - name: rust
+    install_method: asdf
+  - name: elixir
+    install_method: asdf
+  - name: gleam
+    install_method: asdf
+
+# Absolute path to the primary repositories directory.
+dev_repos_path: "/var/mnt/eclipse/repos"
+
+# Whether to create the workspace directory structure if it does not exist.
+dev_create_workspace: true

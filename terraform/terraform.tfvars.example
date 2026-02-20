@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Example Terraform Variables — copy to terraform.tfvars and customise
+#
+# This file demonstrates the homoiconic pattern: the data IS the infrastructure.
+# Each entry in container_services becomes a running container.
+
+podman_socket = "unix:///run/user/1000/podman/podman.sock"
+project_name  = "infra"
+
+# ── Container Services ────────────────────────────────────────
+# Uncomment and modify to deploy containers.
+
+container_services = {
+  # Reverse proxy / web server
+  nginx = {
+    image = "docker.io/library/nginx"
+    tag   = "alpine"
+    ports = [
+      { internal = 80, external = 8080 }
+    ]
+    volumes = [
+      {
+        host_path      = "/var/mnt/eclipse/repos/infrastructure-automation/data/nginx/html"
+        container_path = "/usr/share/nginx/html"
+        read_only      = true
+      }
+    ]
+    healthcheck = {
+      test     = ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval = "30s"
+      timeout  = "5s"
+      retries  = 3
+    }
+    labels = {
+      "purpose" = "reverse-proxy"
+    }
+  }
+
+  # # Monitoring dashboard
+  # grafana = {
+  #   image = "docker.io/grafana/grafana-oss"
+  #   tag   = "latest"
+  #   ports = [
+  #     { internal = 3000, external = 3000 }
+  #   ]
+  #   volumes = [
+  #     {
+  #       host_path      = "/var/mnt/eclipse/repos/infrastructure-automation/data/grafana"
+  #       container_path = "/var/lib/grafana"
+  #     }
+  #   ]
+  #   env = {
+  #     "GF_SECURITY_ADMIN_PASSWORD" = "changeme"
+  #   }
+  # }
+}
+
+# ── Networks ──────────────────────────────────────────────────
+
+networks = {
+  # backend = {
+  #   driver  = "bridge"
+  #   subnet  = "172.20.0.0/16"
+  #   gateway = "172.20.0.1"
+  # }
+}

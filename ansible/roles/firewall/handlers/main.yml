@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# handlers/main.yml - Handlers for the firewall role.
+# Triggered when firewall rules change and a reload is needed.
+---
+
+- name: Reload firewalld
+  ansible.builtin.command:
+    cmd: firewall-cmd --reload
+  become: true
+  changed_when: true
+  tags:
+    - firewall
+    - reload

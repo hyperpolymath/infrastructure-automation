@@ -1,0 +1,16 @@
+{# SPDX-License-Identifier: PMPL-1.0-or-later #}
+{# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk> #}
+{#
+   networking role - hosts entry template
+   Renders a list of /etc/hosts entries from the hosts_entries variable.
+   Each entry maps an IP address to one or more hostnames.
+#}
+# Managed by Ansible - infrastructure-automation networking role
+# Do not edit manually; changes will be overwritten on next playbook run.
+
+127.0.0.1   localhost localhost.localdomain
+::1         localhost localhost.localdomain ip6-localhost ip6-loopback
+
+{% for entry in hosts_entries %}
+{{ entry.ip }}    {{ entry.names }}
+{% endfor %}

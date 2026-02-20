@@ -1,0 +1,114 @@
+= Decision Log — infrastructure-automation
+Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>
+v1.0.0, 2026-02-20
+:toc:
+:toc-title: Contents
+// SPDX-License-Identifier: PMPL-1.0-or-later
+
+== Overview
+
+This document records key design decisions, their context, and rationale.
+Cross-references the formal ADRs in `.machine_readable/META.scm`.
+
+== Decision 1: Ansible for Configuration, Terraform for Provisioning
+
+*Date:* 2026-02-20 +
+*Status:* Accepted
+
+*Context:* Organisation moving from SaltStack. User preference was "ideally
+Terraform for everything" but the team needs configuration management
+(packages, users, files, services) which Terraform cannot do.
+
+*Decision:* Use Ansible for configuration management (90% of the work).
+Use Terraform only for declarative container provisioning (10%).
+
+*Rationale:*
+
+[cols="1,1,1"]
+|===
+| Concern | Ansible | Terraform
+
+| Package management | ansible.builtin.dnf, command (rpm-ostree) | Cannot do this
+| User management | ansible.builtin.user | Cannot do this
+| File management | ansible.builtin.copy, template | Cannot do this
+| Service management | ansible.builtin.systemd | Cannot do this
+| Firewall rules | ansible.posix.firewalld | Cannot do this
+| Container lifecycle | containers.podman.podman_container | docker provider (with state tracking)
+|===
+
+Terraform's unique value is *state-tracked lifecycle management*. When you
+tell Terraform "I want exactly these 3 containers", it knows to create new ones,
+update changed ones, and destroy removed ones. Ansible can create containers
+but doesn't track what it previously created.
+
+== Decision 2: Agentless Architecture
+
+*Date:* 2026-02-20 +
+*Status:* Accepted
+
+*Context:* SaltStack required a persistent master daemon and minion agents
+on every managed host. On Fedora Silverblue (immutable OS), installing the
+Salt minion via rpm-ostree was problematic (user creation failures, reboot
+requirements).
+
+*Decision:* Ansible's agentless (SSH-based) architecture eliminates these issues.
+No daemon to install, no user to create, no reboot required.
+
+*Consequence:* For local management, we use `ansible_connection: local` which
+doesn't even need SSH — it runs directly on the host.
+
+== Decision 3: Reflexive Self-Inspection
+
+*Date:* 2026-02-20 +
+*Status:* Accepted
+
+*Context:* Need the system to observe and report its own state (reflexive property).
+SaltStack had salt-call for local introspection but no structured reporting.
+
+*Decision:* Three-layer reflexive system:
+
+1. *Ansible callback plugin* (`reflexive_reporter`) — records all state transitions
+   to JSON during playbook execution
+2. *Self-check script* (`scripts/self-check.sh`) — validates current vs desired
+   state independently of Ansible
+3. *Terraform outputs* — expose current container infrastructure state
+
+*Consequence:* The system can always answer "what is my current state?" and
+"what changed in the last run?" without external monitoring.
+
+== Decision 4: Homoiconic Configuration
+
+*Date:* 2026-02-20 +
+*Status:* Accepted
+
+*Context:* Configuration should describe itself — the map IS the territory.
+
+*Decision:* Each Ansible role carries self-describing metadata:
+
+* `meta/main.yml` — role purpose, dependencies, platform support
+* `defaults/main.yml` — documented variables with sensible defaults
+* Comments in `tasks/main.yml` explaining the "why"
+
+The system's documentation is embedded in its implementation. Reading
+`group_vars/all.yml` tells you the desired state. Reading `meta/main.yml`
+tells you what a role does. The code IS the documentation.
+
+== Decision 5: Silverblue-First Design
+
+*Date:* 2026-02-20 +
+*Status:* Accepted
+
+*Context:* Primary target is Fedora Silverblue, an immutable desktop OS
+where standard package management (dnf) modifies the read-only root filesystem
+via rpm-ostree layering.
+
+*Decision:* Roles detect Silverblue via `silverblue_immutable` variable and
+adapt their behaviour:
+
+* Packages: `rpm-ostree install --idempotent` instead of `dnf install`
+* Flatpak: For desktop applications
+* Toolbox: For development environments
+* Podman: For services (containerised by default)
+
+*Consequence:* Roles work on both mutable Fedora (dnf) and immutable Silverblue
+(rpm-ostree) without separate playbooks.

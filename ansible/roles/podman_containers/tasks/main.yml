@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# podman_containers role - main tasks
+# Ensures podman is installed, enables the podman socket for rootless usage,
+# manages containers via the containers.podman collection, and cleans up
+# containers marked as absent.
+---
+
+- name: Ensure podman is installed
+  ansible.builtin.package:
+    name: podman
+    state: present
+
+- name: Enable podman socket for rootless containers
+  ansible.builtin.systemd:
+    name: podman.socket
+    enabled: true
+    state: started
+    scope: user
+  become: false
+  when: podman_rootless | bool
+  notify: Restart podman socket
+
+- name: Manage podman containers
+  containers.podman.podman_container:
+    name: "{{ item.name }}"
+    image: "{{ item.image }}"
+    state: "{{ item.state | default('started') }}"
+    ports: "{{ item.ports | default(omit) }}"
+    volumes: "{{ item.volumes | default(omit) }}"
+    env: "{{ item.env | default(omit) }}"
+    restart_policy: "{{ item.restart_policy | default('always') }}"
+    recreate: false
+  loop: "{{ podman_containers }}"
+  loop_control:
+    label: "{{ item.name }} ({{ item.state | default('started') }})"
+  when:
+    - podman_containers | length > 0
+    - (item.state | default('started')) != 'absent'
+
+- name: Remove containers marked as absent
+  containers.podman.podman_container:
+    name: "{{ item.name }}"
+    state: absent
+  loop: "{{ podman_containers }}"
+  loop_control:
+    label: "{{ item.name }} (cleanup)"
+  when:
+    - podman_containers | length > 0
+    - (item.state | default('started')) == 'absent'
+
+- name: Prune unused container images
+  containers.podman.podman_prune:
+    image: true
+    volume: false
+  changed_when: false
+  when: podman_containers | selectattr('state', 'defined') | selectattr('state', 'eq', 'absent') | list | length > 0

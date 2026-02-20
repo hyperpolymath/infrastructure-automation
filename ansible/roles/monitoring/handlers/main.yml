@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# monitoring role - handlers
+# Provides a handler to restart the collectd service when configuration changes.
+---
+
+- name: Restart collectd
+  ansible.builtin.systemd:
+    name: collectd
+    state: restarted
+  when: monitoring_enable_collectd | bool
+  listen: "restart collectd"

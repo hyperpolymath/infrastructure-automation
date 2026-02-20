@@ -1,0 +1,121 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Group Variables — Shared across ALL hosts
+#
+# Homoiconic: these variables describe the desired system state.
+# Ansible converges reality to match this description.
+# Change a value here → the system changes to match.
+#
+# Reflexive: every variable is queryable at runtime via:
+#   ansible localhost -m debug -a "var=hostvars[inventory_hostname]"
+
+# ── Identity ──────────────────────────────────────────────────
+infra_org: "hyperpolymath"
+infra_author: "Jonathan D.A. Jewell"
+infra_email: "jonathan.jewell@open.ac.uk"
+infra_license: "PMPL-1.0-or-later"
+
+# ── System ────────────────────────────────────────────────────
+# Primary user account
+primary_user: "hyper"
+primary_group: "hyper"
+primary_shell: "/bin/bash"
+
+# Timezone and locale
+system_timezone: "Europe/London"
+system_locale: "en_GB.UTF-8"
+
+# ── Packages ──────────────────────────────────────────────────
+# Essential packages installed on every host.
+# On Silverblue: installed via rpm-ostree (layered).
+# On mutable Fedora: installed via dnf.
+base_packages:
+  - vim
+  - git
+  - htop
+  - curl
+  - wget
+  - tree
+  - jq
+  - tmux
+  - ripgrep
+
+# ── Users ─────────────────────────────────────────────────────
+managed_users:
+  - name: devops
+    uid: 1500
+    shell: /bin/bash
+    groups:
+      - wheel
+    ssh_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI_REPLACE_WITH_REAL_KEY devops@infra"
+    state: present
+
+# ── Files ─────────────────────────────────────────────────────
+motd_message: |
+  ┌─────────────────────────────────────────────────┐
+  │  Managed by Ansible (infrastructure-automation) │
+  │  Owner: {{ infra_org }}                         │
+  │  Changes here will be overwritten on next run.  │
+  └─────────────────────────────────────────────────┘
+
+# ── Services ──────────────────────────────────────────────────
+managed_services:
+  - name: sshd
+    enabled: true
+    state: started
+  - name: crond
+    enabled: true
+    state: started
+
+# ── Firewall ──────────────────────────────────────────────────
+firewall_backend: firewalld
+firewall_default_zone: public
+firewall_allowed_services:
+  - ssh
+  - dhcpv6-client
+firewall_allowed_ports: []
+  # - port: 8080
+  #   protocol: tcp
+
+# ── Sudo ──────────────────────────────────────────────────────
+sudo_wheel_nopasswd: false
+sudo_custom_rules:
+  - name: "ansible-automation"
+    user: "{{ primary_user }}"
+    commands: "ALL"
+    nopasswd: true
+
+# ── Monitoring ────────────────────────────────────────────────
+monitoring_packages:
+  - htop
+monitoring_enable_collectd: false
+
+# ── Networking ────────────────────────────────────────────────
+hosts_entries:
+  - ip: "127.0.0.1"
+    names:
+      - "localhost"
+      - "localhost.localdomain"
+  # - ip: "10.0.0.5"
+  #   names:
+  #     - "mydb.local"
+
+# ── Containers (Podman) ──────────────────────────────────────
+podman_rootless: true
+podman_containers:
+  # Example: uncomment to deploy nginx
+  # - name: infra-nginx
+  #   image: docker.io/library/nginx:alpine
+  #   state: started
+  #   ports:
+  #     - "8080:80"
+  #   restart_policy: always
+
+# ── Development ───────────────────────────────────────────────
+dev_tools:
+  - name: rust
+    install_method: asdf
+  - name: elixir
+    install_method: asdf
+  - name: gleam
+    install_method: asdf

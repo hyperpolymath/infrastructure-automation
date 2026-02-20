@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# tasks/main.yml - Install base packages on Fedora hosts.
+# Automatically detects Silverblue/Atomic desktops and uses rpm-ostree
+# instead of dnf for immutable systems.
+---
+
+- name: Detect if host is Silverblue/Atomic (immutable OS)
+  ansible.builtin.stat:
+    path: /run/ostree-booted
+  register: _ostree_booted
+  tags:
+    - base_packages
+    - detect
+
+- name: Set fact for immutable OS detection
+  ansible.builtin.set_fact:
+    _is_silverblue: "{{ _ostree_booted.stat.exists }}"
+  tags:
+    - base_packages
+    - detect
+
+- name: Install base packages via rpm-ostree (Silverblue/Atomic)
+  ansible.builtin.command:
+    cmd: "rpm-ostree install --idempotent {{ item }}"
+  loop: "{{ base_packages }}"
+  register: _rpm_ostree_result
+  changed_when: "'Installing:' in _rpm_ostree_result.stdout or 'Importing:' in _rpm_ostree_result.stdout"
+  when: _is_silverblue | bool
+  become: true
+  tags:
+    - base_packages
+    - install
+    - silverblue
+
+- name: Install base packages via dnf (mutable Fedora)
+  ansible.builtin.dnf:
+    name: "{{ base_packages }}"
+    state: present
+  when: not (_is_silverblue | bool)
+  become: true
+  tags:
+    - base_packages
+    - install
+    - dnf
+
+- name: Record installed packages as host fact (reflexive pattern)
+  ansible.builtin.set_fact:
+    base_packages_installed:
+      packages: "{{ base_packages }}"
+      method: "{{ 'rpm-ostree' if (_is_silverblue | bool) else package_manager }}"
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+    cacheable: true
+  tags:
+    - base_packages
+    - facts

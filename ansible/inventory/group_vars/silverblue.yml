@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Group Variables — Silverblue-specific overrides
+#
+# Fedora Silverblue is an immutable OS:
+#   - Root filesystem is read-only (rpm-ostree)
+#   - Packages are "layered" not "installed"
+#   - Changes require reboot to activate
+#   - /var and /home are writable
+#   - Podman containers are the primary workload pattern
+
+# Package management on Silverblue uses rpm-ostree, not dnf
+package_manager: rpm-ostree
+silverblue_immutable: true
+
+# Packages that should be layered via rpm-ostree
+# Keep this minimal — prefer containers and toolbox
+silverblue_layered_packages:
+  - vim-enhanced
+  - git
+  - htop
+  - jq
+  - tmux
+  - ripgrep
+  # Ansible itself needs to be available on the host
+  # Install via: pip install --user ansible
+
+# Packages to install inside toolbox instead of layering
+silverblue_toolbox_packages:
+  - gcc
+  - make
+  - python3-devel
+  - openssl-devel
+
+# Flatpak applications (Silverblue's preferred app format)
+silverblue_flatpaks:
+  - org.mozilla.firefox
+  - org.kde.konsole

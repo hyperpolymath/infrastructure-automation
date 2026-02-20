@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# defaults/main.yml - Default variables for the services role.
+# Define which systemd services to manage and their desired state.
+---
+
+# List of systemd services to manage.
+# Each entry supports the following keys:
+#   name    - (required) The systemd unit name (without .service suffix)
+#   enabled - (optional) Whether the service starts on boot, default true
+#   state   - (optional) Desired runtime state: started, stopped, restarted, reloaded
+managed_services:
+  - name: sshd
+    enabled: true
+    state: started
+  - name: crond
+    enabled: true
+    state: started

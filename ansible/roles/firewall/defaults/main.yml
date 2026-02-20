@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# defaults/main.yml - Default variables for the firewall role.
+# Controls firewalld zone, allowed services, and allowed ports.
+---
+
+# Firewall backend. Currently only firewalld is supported.
+firewall_backend: firewalld
+
+# Default firewalld zone to apply rules to.
+firewall_default_zone: public
+
+# Services to allow through the firewall (by firewalld service name).
+firewall_allowed_services:
+  - ssh
+  - dhcpv6-client
+
+# Ports to allow through the firewall.
+# Each entry should be in the format "port/protocol" (e.g., "8080/tcp").
+firewall_allowed_ports: []

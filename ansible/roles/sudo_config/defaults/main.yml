@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# defaults/main.yml - Default variables for the sudo_config role.
+# Controls wheel group passwordless sudo and custom sudoers drop-in rules.
+---
+
+# Whether to grant the wheel group passwordless sudo access.
+# Set to true only on trusted internal systems.
+sudo_wheel_nopasswd: false
+
+# Custom sudoers rules deployed as drop-in files in /etc/sudoers.d/.
+# Each entry supports the following keys:
+#   name     - (required) Filename in /etc/sudoers.d/ (alphanumeric + hyphens)
+#   user     - (required) Username or group (prefix groups with %)
+#   host     - (optional) Host specification, default ALL
+#   runas    - (optional) Run-as user, default ALL
+#   commands - (required) List of allowed commands
+#   nopasswd - (optional) Whether to skip password prompt, default false
+#   comment  - (optional) Comment describing the rule's purpose
+sudo_custom_rules: []
+#  - name: deploy-systemctl
+#    user: deploy
+#    host: ALL
+#    runas: root
+#    commands:
+#      - /usr/bin/systemctl restart *
+#      - /usr/bin/systemctl reload *
+#    nopasswd: true
+#    comment: "Allow deploy user to restart and reload services"

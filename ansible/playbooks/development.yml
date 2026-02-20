@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+#
+# development.yml — Developer experience layer playbook
+#
+# Installs and configures development toolchains (Rust, Elixir, Gleam,
+# etc.) via asdf or other install methods. This is the outermost layer
+# and has no downstream dependents — it is purely for developer
+# productivity on workstation hosts.
+#
+# Roles applied:
+#   - development : Manages developer toolchains and environment setup
+---
+
+- name: "Development — Developer Experience Layer"
+  hosts: all
+  become: true
+  gather_facts: false
+
+  pre_tasks:
+    - name: "Gather only required facts (OS family, user info)"
+      ansible.builtin.setup:
+        gather_subset:
+          - "!all"
+          - "!min"
+          - distribution
+          - user_dir
+      tags: [always]
+
+    - name: "Display development convergence target"
+      ansible.builtin.debug:
+        msg: >-
+          Converging development layer on {{ inventory_hostname }}
+          (dev_tools={{ dev_tools | default([]) | map(attribute='name') | list }})
+      tags: [always]
+
+  roles:
+    - role: development
+      tags: [development, dev, toolchains]

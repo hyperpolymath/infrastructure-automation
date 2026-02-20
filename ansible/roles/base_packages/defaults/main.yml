@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# defaults/main.yml - Default variables for the base_packages role.
+# Override these in group_vars, host_vars, or playbook vars as needed.
+---
+
+# List of packages to install on all managed hosts.
+base_packages:
+  - vim
+  - git
+  - htop
+  - curl
+  - wget
+  - tree
+  - jq
+  - tmux
+  - ripgrep
+
+# The package manager to use on mutable (non-Silverblue) systems.
+# Ignored on Silverblue/Atomic hosts where rpm-ostree is used instead.
+package_manager: dnf

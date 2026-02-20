@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# monitoring role - main tasks
+# Installs monitoring packages, optionally enables collectd, creates a local
+# monitoring log directory, and sets up a cron job for reflexive system stats
+# logging (the system monitors itself).
+---
+
+- name: Install monitoring packages
+  ansible.builtin.package:
+    name: "{{ monitoring_packages }}"
+    state: present
+  when: monitoring_packages | length > 0
+
+- name: Install collectd when enabled
+  ansible.builtin.package:
+    name: collectd
+    state: present
+  when: monitoring_enable_collectd | bool
+
+- name: Enable and start collectd service
+  ansible.builtin.systemd:
+    name: collectd
+    enabled: true
+    state: started
+  when: monitoring_enable_collectd | bool
+
+- name: Create local monitoring log directory
+  ansible.builtin.file:
+    path: /var/log/infrastructure
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy reflexive system stats logging script
+  ansible.builtin.copy:
+    dest: /usr/local/bin/log-system-stats.sh
+    owner: root
+    group: root
+    mode: "0755"
+    content: |
+      #!/bin/bash
+      # SPDX-License-Identifier: PMPL-1.0-or-later
+      # Reflexive system stats logger - the system monitors itself.
+      LOGFILE="/var/log/infrastructure/system-stats.log"
+      TIMESTAMP="$(date --iso-8601=seconds)"
+      {
+        echo "--- ${TIMESTAMP} ---"
+        echo "LOAD: $(cat /proc/loadavg)"
+        echo "MEMORY:"
+        free -h | head -3
+        echo "DISK:"
+        df -h / | tail -1
+        echo "UPTIME: $(uptime -p)"
+        echo ""
+      } >> "${LOGFILE}"
+
+- name: Set up cron job for reflexive system stats logging
+  ansible.builtin.cron:
+    name: "infrastructure-reflexive-stats"
+    minute: "*/15"
+    job: "/usr/local/bin/log-system-stats.sh"
+    user: root
+    state: present

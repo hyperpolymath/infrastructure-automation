@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# networking role - metadata
+---
+
+galaxy_info:
+  role_name: networking
+  author: "Jonathan D.A. Jewell"
+  description: >-
+    Manage /etc/hosts entries idempotently via lineinfile, optionally manage
+    /etc/resolv.conf, and set the system hostname.
+  license: "PMPL-1.0-or-later"
+  company: hyperpolymath
+
+  min_ansible_version: "2.14"
+
+  platforms:
+    - name: Fedora
+      versions:
+        - all
+    - name: EL
+      versions:
+        - "9"
+
+  galaxy_tags:
+    - networking
+    - hosts
+    - dns
+    - hostname
+
+dependencies: []

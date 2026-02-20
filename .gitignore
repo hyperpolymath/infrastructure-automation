@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+.terraform.lock.hcl
+crash.log
+
+# Ansible
+*.retry
+ansible/inventory/host_vars/*/vault.yml
+
+# Secrets (NEVER commit)
+*.pem
+*.key
+*.crt
+*.p12
+.env
+.env.*
+secrets/
+vault_password
+
+# OS/IDE
+.DS_Store
+.directory
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# AI agent artifacts
+ai-cli-crash-capture/
+sync_report*.txt
+
+# Logs
+*.log
+logs/

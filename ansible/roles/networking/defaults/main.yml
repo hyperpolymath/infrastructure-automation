@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# networking role - default variables
+# Defines hosts file entries and resolv.conf management settings.
+---
+
+# List of /etc/hosts entries to manage. Each item must have 'ip' and 'names' keys.
+# Example:
+#   hosts_entries:
+#     - ip: "192.168.1.10"
+#       names: "server.local server"
+#     - ip: "192.168.1.20"
+#       names: "db.local db"
+hosts_entries: []
+
+# Whether to manage /etc/resolv.conf directly. Set to true only on systems
+# where resolv.conf is not managed by NetworkManager or systemd-resolved.
+manage_resolv_conf: false

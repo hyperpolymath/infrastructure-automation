@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+#
+# monitoring.yml — Observability layer playbook
+#
+# Installs and configures monitoring and observability tooling.
+# Depends on the base layer (packages) and security layer (firewall
+# ports may need to be opened for metrics collectors).
+#
+# Roles applied:
+#   - monitoring : Installs monitoring packages and optional collectd
+---
+
+- name: "Monitoring — Observability Layer"
+  hosts: all
+  become: true
+  gather_facts: false
+
+  pre_tasks:
+    - name: "Gather only required facts (OS family, package manager)"
+      ansible.builtin.setup:
+        gather_subset:
+          - "!all"
+          - "!min"
+          - distribution
+          - pkg_mgr
+      tags: [always]
+
+    - name: "Display monitoring convergence target"
+      ansible.builtin.debug:
+        msg: >-
+          Converging monitoring layer on {{ inventory_hostname }}
+          (collectd={{ monitoring_enable_collectd | default(false) }})
+      tags: [always]
+
+  roles:
+    - role: monitoring
+      tags: [monitoring, observability]

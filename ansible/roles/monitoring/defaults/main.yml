@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# monitoring role - default variables
+# Defines packages to install and whether to enable collectd for metrics collection.
+---
+
+# List of monitoring-related packages to install on the target host.
+monitoring_packages:
+  - htop
+
+# Whether to install and enable the collectd daemon for system metrics collection.
+# When true, collectd is installed, configured, and started via systemd.
+monitoring_enable_collectd: false

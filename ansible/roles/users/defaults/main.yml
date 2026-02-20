@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# defaults/main.yml - Default variables for the users role.
+# Override managed_users in group_vars or host_vars with real user data.
+---
+
+# List of users to create and manage on the host.
+# Each entry supports the following keys:
+#   name       - (required) Username
+#   uid        - (optional) Numeric UID to assign
+#   shell      - (optional) Login shell, default /bin/bash
+#   groups     - (optional) List of supplementary groups
+#   ssh_keys   - (optional) List of SSH public key strings for authorized_keys
+#   state      - (optional) 'present' or 'absent', default 'present'
+#   comment    - (optional) GECOS comment field
+#   home       - (optional) Home directory path override
+managed_users:
+  - name: deploy
+    uid: 2001
+    shell: /bin/bash
+    groups:
+      - wheel
+    ssh_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAEXAMPLE deploy@infrastructure"
+    state: present
+    comment: "Deployment service account"
+
+# Default shell assigned to users when not explicitly specified.
+users_default_shell: /bin/bash
+
+# Base directory for home directories.
+users_home_base: /home
+
+# Permissions for the .ssh directory.
+users_ssh_dir_mode: "0700"
+
+# Permissions for authorized_keys files.
+users_authorized_keys_mode: "0600"

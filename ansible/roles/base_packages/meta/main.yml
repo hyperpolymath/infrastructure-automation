@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# meta/main.yml - Role metadata for base_packages.
+---
+
+galaxy_info:
+  role_name: base_packages
+  author: "Jonathan D.A. Jewell"
+  description: >-
+    Install essential base packages on Fedora hosts. Automatically detects
+    Silverblue/Atomic immutable desktops and uses rpm-ostree instead of dnf.
+    Records installed packages as an Ansible fact for downstream consumption
+    (reflexive pattern).
+  license: "PMPL-1.0-or-later"
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Fedora
+      versions:
+        - 42
+        - 43
+  galaxy_tags:
+    - packages
+    - base
+    - fedora
+    - silverblue
+
+dependencies: []

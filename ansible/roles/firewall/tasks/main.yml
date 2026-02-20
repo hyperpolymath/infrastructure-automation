@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# tasks/main.yml - Configure firewalld on Fedora hosts.
+# Ensures firewalld is installed and running, sets the default zone,
+# adds allowed services and ports, and reloads the firewall via handler.
+---
+
+- name: Ensure firewalld is installed
+  ansible.builtin.dnf:
+    name: firewalld
+    state: present
+  become: true
+  tags:
+    - firewall
+    - install
+
+- name: Ensure firewalld service is running and enabled
+  ansible.builtin.systemd:
+    name: firewalld
+    enabled: true
+    state: started
+  become: true
+  tags:
+    - firewall
+    - service
+
+- name: Set default firewalld zone
+  ansible.builtin.command:
+    cmd: "firewall-cmd --set-default-zone={{ firewall_default_zone }}"
+  register: _firewall_zone_result
+  changed_when: "'ZONE_ALREADY_SET' not in _firewall_zone_result.stderr"
+  become: true
+  tags:
+    - firewall
+    - zone
+
+- name: Allow services through firewall
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    zone: "{{ firewall_default_zone }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ firewall_allowed_services }}"
+  loop_control:
+    label: "{{ item }}"
+  become: true
+  notify: Reload firewalld
+  tags:
+    - firewall
+    - services
+
+- name: Allow ports through firewall
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    zone: "{{ firewall_default_zone }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ firewall_allowed_ports }}"
+  loop_control:
+    label: "{{ item }}"
+  when: firewall_allowed_ports | length > 0
+  become: true
+  notify: Reload firewalld
+  tags:
+    - firewall
+    - ports

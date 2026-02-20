@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# development role - metadata
+---
+
+galaxy_info:
+  role_name: development
+  author: "Jonathan D.A. Jewell"
+  description: >-
+    Set up a development environment with asdf-managed language toolchains
+    (Rust, Elixir, Gleam), git configuration, workspace directories, and
+    a global .editorconfig for the primary user.
+  license: "PMPL-1.0-or-later"
+  company: hyperpolymath
+
+  min_ansible_version: "2.14"
+
+  platforms:
+    - name: Fedora
+      versions:
+        - all
+    - name: EL
+      versions:
+        - "9"
+
+  galaxy_tags:
+    - development
+    - asdf
+    - rust
+    - elixir
+    - gleam
+    - git
+    - editorconfig
+
+dependencies: []

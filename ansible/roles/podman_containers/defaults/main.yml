@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# podman_containers role - default variables
+# Defines rootless mode preference and the list of containers to manage.
+---
+
+# Whether to run containers in rootless mode (recommended for security).
+podman_rootless: true
+
+# List of containers to manage via podman. Each item supports:
+#   name:           (required) Container name
+#   image:          (required) Container image reference
+#   state:          Container state: started, stopped, absent (default: started)
+#   ports:          List of port mappings, e.g. ["8080:80"]
+#   volumes:        List of volume mounts, e.g. ["/host/path:/container/path:Z"]
+#   env:            Dictionary of environment variables
+#   restart_policy: Restart policy: always, on-failure, no (default: always)
+#
+# Example:
+#   podman_containers:
+#     - name: caddy
+#       image: docker.io/library/caddy:latest
+#       state: started
+#       ports:
+#         - "8080:80"
+#         - "8443:443"
+#       volumes:
+#         - "/srv/caddy/data:/data:Z"
+#       env:
+#         DOMAIN: example.com
+#       restart_policy: always
+podman_containers: []

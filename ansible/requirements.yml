@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Ansible Collection Requirements
+# Install with: ansible-galaxy install -r requirements.yml
+
+---
+collections:
+  - name: ansible.posix
+    version: ">=1.5.0"
+  - name: community.general
+    version: ">=8.0.0"
+  - name: containers.podman
+    version: ">=1.12.0"
+
+# No role dependencies from Galaxy — all roles are local.

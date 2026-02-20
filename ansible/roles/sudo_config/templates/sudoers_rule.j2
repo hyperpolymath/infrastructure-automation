@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Managed by Ansible - infrastructure-automation
+# Do not edit manually; changes will be overwritten.
+#
+{% if item.comment is defined %}
+# {{ item.comment }}
+{% endif %}
+# Rule: {{ item.name }}
+{{ item.user }} {{ item.host | default('ALL') }}=({{ item.runas | default('ALL') }}) {% if item.nopasswd | default(false) %}NOPASSWD: {% endif %}{{ item.commands | join(', ') }}

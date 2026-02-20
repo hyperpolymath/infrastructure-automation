@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# meta/main.yml - Role metadata for sudo_config.
+---
+
+galaxy_info:
+  role_name: sudo_config
+  author: "Jonathan D.A. Jewell"
+  description: >-
+    Configure sudo access on Fedora hosts. Manages the wheel group
+    passwordless setting and deploys custom sudoers drop-in rules to
+    /etc/sudoers.d/. All rules are validated with visudo before deployment.
+    Stale rules are automatically cleaned up.
+  license: "PMPL-1.0-or-later"
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Fedora
+      versions:
+        - 42
+        - 43
+  galaxy_tags:
+    - sudo
+    - sudoers
+    - security
+    - privilege
+    - fedora
+
+dependencies: []

@@ -1,0 +1,99 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# silverblue role - main tasks
+# Manages Fedora Silverblue / Atomic Desktop systems: layers packages via
+# rpm-ostree, installs Flatpak apps, creates a toolbox with packages, and
+# registers a fact with the current rpm-ostree deployment status (reflexive).
+---
+
+- name: Check if running on an ostree-based system
+  ansible.builtin.stat:
+    path: /usr/bin/rpm-ostree
+  register: silverblue_rpm_ostree_binary
+
+- name: Fail if silverblue_immutable is true but rpm-ostree is not found
+  ansible.builtin.fail:
+    msg: >-
+      This role requires rpm-ostree but /usr/bin/rpm-ostree was not found.
+      Either set silverblue_immutable to false or run this on a Fedora
+      Silverblue / Atomic Desktop system.
+  when:
+    - silverblue_immutable | bool
+    - not silverblue_rpm_ostree_binary.stat.exists
+
+- name: Layer packages via rpm-ostree
+  ansible.builtin.command:
+    cmd: "rpm-ostree install --idempotent --allow-inactive {{ silverblue_layered_packages | join(' ') }}"
+  register: silverblue_layer_result
+  changed_when: "'no change' not in silverblue_layer_result.stdout | default('')"
+  when:
+    - silverblue_immutable | bool
+    - silverblue_rpm_ostree_binary.stat.exists
+    - silverblue_layered_packages | length > 0
+
+- name: Ensure Flatpak is available
+  ansible.builtin.command:
+    cmd: flatpak --version
+  register: silverblue_flatpak_check
+  changed_when: false
+  failed_when: false
+
+- name: Install Flatpak applications
+  ansible.builtin.command:
+    cmd: "flatpak install --noninteractive --assumeyes flathub {{ item }}"
+  loop: "{{ silverblue_flatpaks }}"
+  loop_control:
+    label: "{{ item }}"
+  register: silverblue_flatpak_install_result
+  changed_when: "'already installed' not in silverblue_flatpak_install_result.stderr | default('')"
+  failed_when:
+    - silverblue_flatpak_install_result.rc != 0
+    - "'already installed' not in silverblue_flatpak_install_result.stderr | default('')"
+  when:
+    - silverblue_flatpaks | length > 0
+    - silverblue_flatpak_check.rc == 0
+
+- name: Check if default toolbox exists
+  ansible.builtin.command:
+    cmd: toolbox list --containers
+  register: silverblue_toolbox_list
+  changed_when: false
+  failed_when: false
+  become: false
+
+- name: Create default toolbox if it does not exist
+  ansible.builtin.command:
+    cmd: toolbox create --assumeyes
+  register: silverblue_toolbox_create
+  changed_when: silverblue_toolbox_create.rc == 0
+  when:
+    - silverblue_toolbox_packages | length > 0
+    - "'fedora-toolbox' not in silverblue_toolbox_list.stdout | default('')"
+  become: false
+
+- name: Install packages inside the toolbox
+  ansible.builtin.command:
+    cmd: "toolbox run sudo dnf install -y {{ silverblue_toolbox_packages | join(' ') }}"
+  register: silverblue_toolbox_install_result
+  changed_when: "'Nothing to do' not in silverblue_toolbox_install_result.stdout | default('')"
+  when: silverblue_toolbox_packages | length > 0
+  become: false
+
+- name: Gather current rpm-ostree deployment status (reflexive)
+  ansible.builtin.command:
+    cmd: rpm-ostree status --json
+  register: silverblue_ostree_status_raw
+  changed_when: false
+  when:
+    - silverblue_immutable | bool
+    - silverblue_rpm_ostree_binary.stat.exists
+
+- name: Register rpm-ostree status as an Ansible fact
+  ansible.builtin.set_fact:
+    silverblue_ostree_status: "{{ silverblue_ostree_status_raw.stdout | from_json }}"
+  when:
+    - silverblue_immutable | bool
+    - silverblue_rpm_ostree_binary.stat.exists
+    - silverblue_ostree_status_raw is defined
+    - silverblue_ostree_status_raw.rc == 0

@@ -1,0 +1,174 @@
+= Architecture — infrastructure-automation
+Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>
+v1.0.0, 2026-02-20
+:toc:
+:toc-title: Contents
+:sectnums:
+// SPDX-License-Identifier: PMPL-1.0-or-later
+
+== Overview
+
+This repository replaces SaltStack with a modern Ansible + Terraform architecture
+for managing local infrastructure on Fedora Silverblue (immutable OS).
+
+=== Design Principles
+
+[cols="1,3"]
+|===
+| Principle | Implementation
+
+| *Homoiconic*
+| Configuration describes itself. Each Ansible role carries its own metadata
+  in `meta/main.yml`. Variables in `defaults/main.yml` are self-documenting.
+  The playbook structure mirrors the system architecture. Terraform variables
+  include descriptions and validations that serve as inline documentation.
+
+| *Reflexive*
+| The system inspects and records its own state. The `reflexive_reporter`
+  callback plugin logs every state transition to JSON. `scripts/self-check.sh`
+  validates current vs desired state. Ansible facts provide runtime introspection.
+
+| *Dependable*
+| All tasks are idempotent — running twice produces the same result. Check mode
+  (`--check --diff`) enables dry runs. Tags enable selective execution.
+  Handler-based restarts prevent unnecessary service disruptions.
+
+| *Secure*
+| Firewall-first approach (deny by default, allow explicitly). Sudo rules
+  via drop-in files with syntax validation. Ansible Vault for secrets.
+  No passwords in plaintext. Rootless Podman containers.
+
+| *Interoperable*
+| Compatible with hybrid-automation-router (HAR) for IaC format translation.
+  Ansible inventory can drive Terraform. Standard YAML/HCL formats.
+
+| *Performant*
+| SSH pipelining enabled. Fact caching reduces re-gathering. Async tasks
+  for long-running operations. Free strategy for independent hosts.
+
+| *Accessible*
+| Progressive complexity: quickstart in 3 commands, full customisation
+  via `group_vars`. Clear naming conventions. Comprehensive documentation.
+|===
+
+== Component Architecture
+
+=== Ansible (Configuration Management)
+
+Ansible manages everything that runs *on* a host:
+
+* *Packages* — What software is installed (rpm-ostree on Silverblue, dnf elsewhere)
+* *Users* — Who can access the system and with what permissions
+* *Files* — Configuration files, MOTD, profile scripts
+* *Services* — What systemd services are running and enabled
+* *Firewall* — Network access control (firewalld)
+* *Sudo* — Privilege escalation rules
+* *Monitoring* — Observability tools and self-monitoring cron jobs
+* *Networking* — /etc/hosts entries, hostname, DNS
+* *Containers* — Podman container management (via `containers.podman` collection)
+* *Silverblue* — Immutable OS-specific tasks (rpm-ostree, Flatpak, toolbox)
+* *Development* — Developer tool installation (asdf, language runtimes)
+
+=== Terraform (Container Provisioning)
+
+Terraform manages the *lifecycle* of containerised services:
+
+* *Images* — Pull and track container images
+* *Containers* — Create, update, destroy containers declaratively
+* *Networks* — Container networking (bridge, overlay)
+* *State* — Track what exists and what needs to change
+
+Terraform uses the `kreuzwerker/docker` provider, which is compatible with
+Podman's Docker-compatible API socket.
+
+=== Reflexive Layer
+
+The reflexive layer lets the system observe itself:
+
+* *Callback Plugin* — Records all Ansible state transitions to JSON
+* *Self-Check Script* — Validates current system state against desired
+* *Terraform Outputs* — Query current container infrastructure state
+
+== Data Flow
+
+[source,text]
+----
+group_vars/all.yml    ← Desired state (human-editable)
+       │
+       ▼
+  Playbooks           ← Orchestration logic
+       │
+       ▼
+  Roles               ← Modular implementation
+       │
+       ├──→ Host      ← System changes (packages, users, files, services)
+       │
+       └──→ Podman    ← Container changes (via containers.podman or Terraform)
+              │
+              ▼
+  reflexive_reporter  ← Records all changes (JSON report)
+  self-check.sh       ← Validates convergence
+----
+
+== Role Dependency Graph
+
+[source,text]
+----
+site.yml
+  ├── base.yml
+  │     ├── base_packages    (no dependencies)
+  │     ├── users            (after base_packages)
+  │     ├── files_managed    (no dependencies)
+  │     ├── services         (after base_packages)
+  │     └── networking       (no dependencies)
+  ├── security.yml
+  │     ├── firewall         (depends on base_packages)
+  │     └── sudo_config      (no dependencies)
+  ├── monitoring.yml
+  │     └── monitoring       (depends on base_packages)
+  ├── containers.yml
+  │     ├── silverblue       (when silverblue_immutable is true)
+  │     └── podman_containers (no dependencies)
+  └── development.yml
+        └── development      (no dependencies)
+----
+
+== Security Model
+
+=== Principles
+
+1. *Least privilege* — Tasks escalate only when needed (`become: true` per-task, not globally)
+2. *Deny by default* — Firewall blocks all except explicitly allowed services
+3. *Secrets in vault* — No plaintext passwords or keys in version control
+4. *Audit trail* — reflexive_reporter logs all changes
+5. *Rootless containers* — Podman runs without root privileges
+
+=== Threat Mitigations
+
+[cols="1,2"]
+|===
+| Threat | Mitigation
+
+| Credential exposure | Ansible Vault encryption, `.gitignore` excludes secrets
+| Privilege escalation | Sudo rules in drop-in files with `visudo -cf` validation
+| Network exposure | Firewalld with explicit allow-list, default zone = public
+| Container escape | Rootless Podman (user namespace isolation)
+| Supply chain | Chainguard base images, pinned versions
+| Drift detection | `scripts/self-check.sh` compares actual vs desired state
+|===
+
+== HAR Integration
+
+The hybrid-automation-router (HAR) at
+`/var/mnt/eclipse/repos/ambientops/hybrid-automation-router/` can parse
+these Ansible playbooks and Terraform configs for translation to other
+IaC formats.
+
+HAR's Ansible parser understands:
+
+* Playbook structure and role references
+* Variable files and Jinja2 templates
+* Inventory format and group variables
+
+This enables bidirectional translation between Ansible, Salt, Terraform,
+and other IaC tools through HAR's semantic graph intermediate representation.

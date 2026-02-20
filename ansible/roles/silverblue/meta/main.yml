@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# silverblue role - metadata
+---
+
+galaxy_info:
+  role_name: silverblue
+  author: "Jonathan D.A. Jewell"
+  description: >-
+    Manage Fedora Silverblue and Atomic Desktop systems. Layer packages via
+    rpm-ostree, install Flatpak applications, create and provision toolbox
+    containers, and register reflexive rpm-ostree deployment status as an
+    Ansible fact.
+  license: "PMPL-1.0-or-later"
+  company: hyperpolymath
+
+  min_ansible_version: "2.14"
+
+  platforms:
+    - name: Fedora
+      versions:
+        - all
+
+  galaxy_tags:
+    - silverblue
+    - atomic
+    - rpm-ostree
+    - flatpak
+    - toolbox
+    - immutable
+
+dependencies: []

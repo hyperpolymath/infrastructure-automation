@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# podman_containers role - handlers
+# Provides a handler to restart the podman socket service.
+---
+
+- name: Restart podman socket
+  ansible.builtin.systemd:
+    name: podman.socket
+    state: restarted
+    scope: user
+  become: false
+  when: podman_rootless | bool
+  listen: "Restart podman socket"

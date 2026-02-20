@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+#
+# site.yml — Master orchestration playbook
+#
+# Homoiconic Design
+# -----------------
+# This file's structure IS the system architecture. Each import below maps
+# 1:1 to a system concern, in dependency order. Reading this file tells you
+# exactly what the infrastructure looks like; running it makes reality match.
+#
+# The ordering is intentional and reflects the dependency graph:
+#   1. base      — OS packages, users, files, services, networking (foundation)
+#   2. security  — Firewall rules, sudo configuration (hardening layer)
+#   3. monitoring — Observability tooling (visibility into the above)
+#   4. containers — Podman workloads (application layer)
+#   5. development — Developer toolchains (outer-most concern)
+#
+# Selective Execution
+# -------------------
+# Run everything:          ansible-playbook playbooks/site.yml
+# Run only security:       ansible-playbook playbooks/site.yml --tags security
+# Skip containers:         ansible-playbook playbooks/site.yml --skip-tags containers
+# Run base + security:     ansible-playbook playbooks/site.yml --tags "base,security"
+---
+
+# Full convergence play — targets all hosts in inventory.
+- name: "Infrastructure Automation — Full Convergence"
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: "Announce convergence start"
+      ansible.builtin.debug:
+        msg: "Beginning full infrastructure convergence on {{ inventory_hostname }}"
+      tags: [always]
+
+# ── Layer 1: Foundation ─────────────────────────────────────────────────
+- import_playbook: base.yml
+  tags: [base]
+
+# ── Layer 2: Hardening ──────────────────────────────────────────────────
+- import_playbook: security.yml
+  tags: [security]
+
+# ── Layer 3: Observability ──────────────────────────────────────────────
+- import_playbook: monitoring.yml
+  tags: [monitoring]
+
+# ── Layer 4: Application Workloads ──────────────────────────────────────
+- import_playbook: containers.yml
+  tags: [containers]
+
+# ── Layer 5: Developer Experience ───────────────────────────────────────
+- import_playbook: development.yml
+  tags: [development]

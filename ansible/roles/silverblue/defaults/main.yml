@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# silverblue role - default variables
+# Configuration for Fedora Silverblue / Atomic Desktop systems using
+# rpm-ostree, Flatpak, and toolbox.
+---
+
+# Whether the target system uses an immutable (image-based) OS model.
+# Set to false to skip rpm-ostree and use traditional package management.
+silverblue_immutable: true
+
+# Packages to layer on top of the base ostree image via rpm-ostree install.
+# These persist across updates and are part of the OS deployment.
+silverblue_layered_packages: []
+
+# Flatpak applications to install from the configured remotes (typically Flathub).
+# Use full application IDs, e.g. "org.mozilla.firefox".
+silverblue_flatpaks: []
+
+# Packages to install inside a toolbox container for mutable development work.
+# The toolbox provides a traditional mutable environment on an immutable OS.
+silverblue_toolbox_packages: []

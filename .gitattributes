@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+
+* text=auto eol=lf
+*.yml linguist-language=YAML
+*.yaml linguist-language=YAML
+*.tf linguist-language=HCL
+*.adoc linguist-language=AsciiDoc
+*.sh linguist-language=Shell

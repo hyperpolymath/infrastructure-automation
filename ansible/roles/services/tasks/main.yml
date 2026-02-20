@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# tasks/main.yml - Manage systemd services.
+# Loops over managed_services to ensure each unit is in the desired
+# enabled/state configuration. Notifies the daemon-reload handler
+# when service files may have changed.
+---
+
+- name: Gather service facts for idempotency checks
+  ansible.builtin.service_facts:
+  tags:
+    - services
+    - facts
+
+- name: Manage systemd services
+  ansible.builtin.systemd:
+    name: "{{ item.name }}"
+    enabled: "{{ item.enabled | default(true) }}"
+    state: "{{ item.state | default('started') }}"
+    daemon_reload: false
+  loop: "{{ managed_services }}"
+  loop_control:
+    label: "{{ item.name }} (enabled={{ item.enabled | default(true) }}, state={{ item.state | default('started') }})"
+  become: true
+  notify: Reload systemd daemon
+  tags:
+    - services
+    - systemd
+
+- name: Record managed services as host fact (reflexive pattern)
+  ansible.builtin.set_fact:
+    managed_services_applied:
+      services: "{{ managed_services | map(attribute='name') | list }}"
+      timestamp: "{{ ansible_date_time.iso8601 }}"
+    cacheable: true
+  tags:
+    - services
+    - facts

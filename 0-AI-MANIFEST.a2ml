@@ -1,0 +1,84 @@
+; SPDX-License-Identifier: PMPL-1.0-or-later
+; 0-AI-MANIFEST.a2ml — Universal AI Agent Entry Point
+; infrastructure-automation: SaltStack → Ansible + Terraform Migration
+
+(ai-manifest
+  (version "1.0.0")
+  (repo-name "infrastructure-automation")
+  (owner "hyperpolymath")
+  (author "Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>")
+
+  (purpose
+    "Complete infrastructure-as-code replacement for SaltStack.
+     Ansible handles configuration management (packages, users, files,
+     services, firewall, monitoring, networking).
+     Terraform handles declarative container provisioning (Podman).
+     Designed for Fedora Silverblue (immutable OS) with reflexive
+     self-inspection and homoiconic configuration patterns.")
+
+  (canonical-locations
+    (scm-files ".machine_readable/" "ONLY — never in root")
+    (ansible-roles "ansible/roles/")
+    (ansible-playbooks "ansible/playbooks/")
+    (ansible-inventory "ansible/inventory/")
+    (terraform-modules "terraform/modules/")
+    (terraform-environments "terraform/environments/")
+    (documentation "docs/")
+    (scripts "scripts/")
+    (tests "tests/"))
+
+  (critical-invariants
+    (rule "SCM files ONLY in .machine_readable/ — never root")
+    (rule "Ansible roles follow galaxy structure: tasks/ defaults/ handlers/ meta/")
+    (rule "All tasks MUST be idempotent — no side effects on re-run")
+    (rule "Secrets go in Ansible Vault — NEVER plaintext")
+    (rule "Containers use Podman — NEVER Docker daemon")
+    (rule "Base images from cgr.dev/chainguard — NEVER docker.io debian/ubuntu")
+    (rule "Terraform state stored locally — no remote backend for local infra")
+    (rule "All roles self-describe via meta/main.yml — homoiconic pattern"))
+
+  (design-principles
+    (homoiconic "Configuration describes itself — each role carries its own metadata,
+                 dependencies, and capabilities in meta/main.yml. The system's description
+                 IS the system.")
+    (reflexive "Self-inspection via Ansible facts, custom fact scripts, and the
+               reflexive_reporter callback plugin. The system can query and report
+               its own state at any time.")
+    (dependable "Idempotent operations, check mode (--check), diff mode (--diff),
+                 rollback via Ansible tags, and comprehensive error handling.")
+    (secure "Ansible Vault for secrets, least-privilege execution, firewall-first
+             approach, audit logging, and CIS benchmark alignment.")
+    (interoperable "Compatible with hybrid-automation-router (HAR) for format
+                    translation. Ansible inventory can drive Terraform. Terraform
+                    outputs feed Ansible variables.")
+    (performant "Pipelining enabled, fact caching, async tasks for long operations,
+                 connection pooling, and free strategy for independent hosts.")
+    (accessible "Progressive complexity — quickstart in 3 commands, full customisation
+                 via group_vars. Clear naming, comprehensive docs, and examples."))
+
+  (ecosystem-position
+    (replaces "SaltStack (salt-master, salt-minion, salt states)")
+    (integrates-with
+      ("hybrid-automation-router" "IaC format translation and routing")
+      ("ambientops" "Ambient infrastructure orchestration")
+      ("http-capability-gateway" "HTTP verb governance deployment")
+      ("gitbot-fleet" "Automated repo management")
+      ("hypatia" "Neurosymbolic CI/CD intelligence"))
+    (target-platform "Fedora Silverblue / Atomic Desktop (immutable OS)")
+    (container-runtime "Podman (rootless preferred)"))
+
+  (lifecycle-hooks
+    (on-enter
+      (read ".machine_readable/STATE.scm")
+      (read ".machine_readable/ECOSYSTEM.scm")
+      (read "ansible/inventory/hosts.yml")
+      (verify "ansible --version")
+      (verify "terraform --version"))
+    (on-exit
+      (update ".machine_readable/STATE.scm")))
+
+  (quick-start
+    ("1. Install: scripts/bootstrap.sh"
+     "2. Configure: edit ansible/inventory/group_vars/all.yml"
+     "3. Dry-run: just check"
+     "4. Apply: just apply")))

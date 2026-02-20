@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# meta/main.yml - Role metadata for services.
+---
+
+galaxy_info:
+  role_name: services
+  author: "Jonathan D.A. Jewell"
+  description: >-
+    Manage systemd services declaratively. Ensures each service in the
+    managed_services list is in the desired enabled and running state.
+    Includes a daemon-reload handler for unit file changes.
+  license: "PMPL-1.0-or-later"
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Fedora
+      versions:
+        - 42
+        - 43
+  galaxy_tags:
+    - services
+    - systemd
+    - fedora
+
+dependencies: []

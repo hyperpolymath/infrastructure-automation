@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+#
+# base.yml — Foundation layer playbook
+#
+# Establishes the baseline system state: packages, users, managed files,
+# services, and networking. Every other playbook depends on this layer
+# being converged first.
+#
+# Roles applied (in order):
+#   - base_packages : Ensures required OS packages are present
+#   - users         : Manages user accounts, groups, and SSH keys
+#   - files_managed : Deploys managed configuration files (MOTD, etc.)
+#   - services      : Ensures system services are enabled and running
+#   - networking    : Configures /etc/hosts entries and network settings
+---
+
+- name: "Base — System Foundation"
+  hosts: all
+  become: true
+  gather_facts: false
+
+  pre_tasks:
+    - name: "Gather only required facts (OS family, distribution, packages)"
+      ansible.builtin.setup:
+        gather_subset:
+          - "!all"
+          - "!min"
+          - distribution
+          - pkg_mgr
+      tags: [always]
+
+    - name: "Display target system info"
+      ansible.builtin.debug:
+        msg: >-
+          Converging base layer on {{ inventory_hostname }}
+          ({{ ansible_distribution }} {{ ansible_distribution_version | default('') }},
+          pkg_mgr={{ ansible_pkg_mgr }})
+      tags: [always]
+
+  roles:
+    - role: base_packages
+      tags: [base, base_packages, packages]
+
+    - role: users
+      tags: [base, users]
+
+    - role: files_managed
+      tags: [base, files_managed, files]
+
+    - role: services
+      tags: [base, services]
+
+    - role: networking
+      tags: [base, networking, network]

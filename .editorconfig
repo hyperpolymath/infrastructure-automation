@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# EditorConfig: https://editorconfig.org
+
+root = true
+
+[*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.tf]
+indent_size = 2
+
+[*.{sh,bash}]
+indent_size = 2
+
+[*.{md,adoc}]
+trim_trailing_whitespace = false
+
+[Makefile]
+indent_style = tab
+
+[justfile]
+indent_size = 4

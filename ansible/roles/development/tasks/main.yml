@@ -1,0 +1,131 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# development role - main tasks
+# Ensures asdf is installed, installs language plugins via asdf, sets up
+# development directories, configures git for the primary user, and places
+# an .editorconfig in the home directory.
+---
+
+- name: Determine primary user home directory
+  ansible.builtin.set_fact:
+    dev_user_home: "{{ ansible_env.HOME | default('/home/' + ansible_user_id) }}"
+
+- name: Check if asdf is already installed
+  ansible.builtin.stat:
+    path: "{{ dev_user_home }}/.asdf/asdf.sh"
+  register: dev_asdf_installed
+
+- name: Clone asdf version manager if not present
+  ansible.builtin.git:
+    repo: "https://github.com/asdf-vm/asdf.git"
+    dest: "{{ dev_user_home }}/.asdf"
+    version: master
+    depth: 1
+  become: false
+  when: not dev_asdf_installed.stat.exists
+
+- name: Check which asdf plugins are already installed
+  ansible.builtin.command:
+    cmd: "{{ dev_user_home }}/.asdf/bin/asdf plugin list"
+  register: dev_asdf_plugin_list
+  changed_when: false
+  failed_when: false
+  become: false
+
+- name: Install asdf language plugins
+  ansible.builtin.command:
+    cmd: "{{ dev_user_home }}/.asdf/bin/asdf plugin add {{ item.name }}"
+  loop: "{{ dev_tools }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: dev_asdf_plugin_add
+  changed_when: dev_asdf_plugin_add.rc == 0
+  failed_when:
+    - dev_asdf_plugin_add.rc != 0
+    - "'already added' not in dev_asdf_plugin_add.stderr | default('')"
+  when:
+    - item.install_method == "asdf"
+    - item.name not in (dev_asdf_plugin_list.stdout_lines | default([]))
+  become: false
+
+- name: Create development workspace directory
+  ansible.builtin.file:
+    path: "{{ dev_repos_path }}"
+    state: directory
+    mode: "0755"
+  when: dev_create_workspace | bool
+
+- name: Create hyperpolymath-repos symlink in Documents
+  ansible.builtin.file:
+    src: "{{ dev_repos_path }}"
+    dest: "{{ dev_user_home }}/Documents/hyperpolymath-repos"
+    state: link
+    force: false
+  become: false
+  failed_when: false
+
+- name: Configure git user name for primary user
+  ansible.builtin.command:
+    cmd: git config --global user.name "Jonathan D.A. Jewell"
+  register: dev_git_name_result
+  changed_when: false
+  become: false
+
+- name: Configure git user email for primary user
+  ansible.builtin.command:
+    cmd: git config --global user.email "jonathan.jewell@open.ac.uk"
+  register: dev_git_email_result
+  changed_when: false
+  become: false
+
+- name: Configure git default branch name
+  ansible.builtin.command:
+    cmd: git config --global init.defaultBranch main
+  register: dev_git_branch_result
+  changed_when: false
+  become: false
+
+- name: Deploy .editorconfig in home directory
+  ansible.builtin.copy:
+    dest: "{{ dev_user_home }}/.editorconfig"
+    owner: "{{ ansible_user_id }}"
+    mode: "0644"
+    force: false
+    content: |
+      # SPDX-License-Identifier: PMPL-1.0-or-later
+      # EditorConfig - https://editorconfig.org
+      # Global editorconfig for the primary development user.
+
+      root = true
+
+      [*]
+      indent_style = space
+      indent_size = 2
+      end_of_line = lf
+      charset = utf-8
+      trim_trailing_whitespace = true
+      insert_final_newline = true
+
+      [*.md]
+      trim_trailing_whitespace = false
+
+      [*.{yml,yaml}]
+      indent_size = 2
+
+      [*.rs]
+      indent_size = 4
+
+      [*.ex]
+      indent_size = 2
+
+      [*.gleam]
+      indent_size = 2
+
+      [Makefile]
+      indent_style = tab
+
+      [justfile]
+      indent_style = space
+      indent_size = 4
+  become: false

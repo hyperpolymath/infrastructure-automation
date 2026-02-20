@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# networking role - main tasks
+# Manages /etc/hosts entries idempotently, optionally manages /etc/resolv.conf,
+# and sets the system hostname when the hostname variable is defined.
+---
+
+- name: Manage /etc/hosts entries
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "^{{ item.ip | regex_escape() }}\\s+"
+    line: "{{ item.ip }}    {{ item.names }}"
+    state: present
+    backup: true
+  loop: "{{ hosts_entries }}"
+  loop_control:
+    label: "{{ item.ip }} -> {{ item.names }}"
+  when: hosts_entries | length > 0
+
+- name: Deploy /etc/resolv.conf from template
+  ansible.builtin.template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  when: manage_resolv_conf | bool
+
+- name: Set system hostname
+  ansible.builtin.hostname:
+    name: "{{ hostname }}"
+  when: hostname is defined

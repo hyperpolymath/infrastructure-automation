@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+#
+# containers.yml — Application workloads layer playbook
+#
+# Manages Podman container workloads. On Silverblue hosts, also applies
+# the silverblue role for rpm-ostree layered packages, toolbox setup,
+# and Flatpak management.
+#
+# Roles applied:
+#   - silverblue        : (Silverblue hosts only) rpm-ostree, toolbox, flatpaks
+#   - podman_containers : Manages rootless/rootful Podman containers
+#
+# Note: Podman is preferred over Docker per hyperpolymath container
+# ecosystem standards. Base images should use cgr.dev/chainguard/.
+---
+
+- name: "Containers — Application Workloads Layer"
+  hosts: all
+  become: true
+  gather_facts: false
+
+  pre_tasks:
+    - name: "Gather only required facts (OS family, distribution, user)"
+      ansible.builtin.setup:
+        gather_subset:
+          - "!all"
+          - "!min"
+          - distribution
+          - user_dir
+      tags: [always]
+
+    - name: "Display container convergence target"
+      ansible.builtin.debug:
+        msg: >-
+          Converging container layer on {{ inventory_hostname }}
+          (podman_rootless={{ podman_rootless | default(true) }},
+          silverblue={{ silverblue_immutable | default(false) }})
+      tags: [always]
+
+  roles:
+    # Silverblue-specific configuration (rpm-ostree layers, flatpaks, toolbox).
+    # Only applied when the host is in the silverblue inventory group.
+    - role: silverblue
+      when: "'silverblue' in group_names"
+      tags: [containers, silverblue, immutable]
+
+    # Podman container workloads — applied to all hosts.
+    - role: podman_containers
+      tags: [containers, podman, podman_containers]

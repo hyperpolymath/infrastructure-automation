@@ -1,0 +1,275 @@
+= Migration from SaltStack — infrastructure-automation
+Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>
+v1.0.0, 2026-02-20
+:toc:
+:toc-title: Contents
+:sectnums:
+// SPDX-License-Identifier: PMPL-1.0-or-later
+
+== Overview
+
+This document maps every SaltStack concept to its Ansible/Terraform equivalent.
+Use this as a reference when migrating existing Salt states or understanding
+how this repository replaces your Salt infrastructure.
+
+== Concept Mapping
+
+[cols="1,1,2"]
+|===
+| SaltStack | Ansible/Terraform | Notes
+
+| Salt Master
+| Ansible Controller (your workstation)
+| No persistent daemon needed. Ansible runs from wherever you invoke it.
+
+| Salt Minion
+| Managed Host (via SSH)
+| No agent to install. Ansible connects over SSH (or `local` connection).
+
+| Salt States (.sls)
+| Ansible Roles (tasks/main.yml)
+| YAML-based, similar structure. Roles are more modular than states.
+
+| Pillar Data
+| group_vars / host_vars
+| Same concept: host-specific variables. Stored in `inventory/group_vars/`.
+
+| Grain Data
+| Ansible Facts
+| Auto-gathered system information. Access via `ansible_facts` dict.
+
+| top.sls
+| site.yml (playbook)
+| Maps hosts to roles/states. Ansible uses explicit `hosts:` targeting.
+
+| Jinja2 Templates
+| Jinja2 Templates
+| Identical template engine. Ansible templates go in `roles/*/templates/`.
+
+| Salt Reactor
+| Ansible Handlers + Callbacks
+| Handlers trigger on change. Callback plugins react to events.
+
+| Salt Orchestrate
+| Ansible Playbook ordering
+| `import_playbook` and role dependencies handle orchestration.
+
+| Salt SSH
+| Ansible (native)
+| Ansible is SSH-native by default. No special mode needed.
+
+| salt '*' test.ping
+| `ansible all -m ping`
+| Connectivity test. Ansible's ping is more like Salt's `test.version`.
+
+| salt '*' state.apply
+| `ansible-playbook playbooks/site.yml`
+| Apply all states/roles.
+
+| salt '*' state.apply packages
+| `ansible-playbook playbooks/site.yml --tags base_packages`
+| Apply specific state/role via tags.
+
+| salt '*' state.apply test=True
+| `ansible-playbook playbooks/site.yml --check --diff`
+| Dry run showing what would change.
+
+| salt-key -L
+| `ansible-inventory --list`
+| List managed hosts.
+
+| Salt Environments
+| Ansible Inventory groups
+| Use different inventory files or group_vars per environment.
+
+| Salt Formulas
+| Ansible Galaxy Roles/Collections
+| Community-maintained reusable automation.
+
+| Salt Mine
+| Ansible fact caching
+| Store and share facts between runs.
+
+| salt-call --local
+| `ansible-playbook --connection=local`
+| Run locally without SSH.
+|===
+
+== State-by-State Migration
+
+=== packages.sls → base_packages role
+
+.Salt (before)
+[source,yaml]
+----
+essential-packages:
+  pkg.installed:
+    - pkgs:
+      - vim
+      - git
+      - htop
+      - curl
+      - wget
+      - tree
+----
+
+.Ansible (after) — `ansible/roles/base_packages/tasks/main.yml`
+[source,yaml]
+----
+- name: Install essential packages
+  ansible.builtin.dnf:
+    name: "{{ base_packages }}"
+    state: present
+  when: not silverblue_immutable | default(false)
+
+- name: Layer packages on Silverblue
+  ansible.builtin.command:
+    cmd: "rpm-ostree install --idempotent {{ item }}"
+  loop: "{{ base_packages }}"
+  when: silverblue_immutable | default(false)
+  changed_when: "'already requested' not in rpm_ostree_result.stdout"
+  register: rpm_ostree_result
+----
+
+=== users.sls → users role
+
+.Salt (before)
+[source,yaml]
+----
+devops-user:
+  user.present:
+    - name: devops
+    - uid: 1500
+    - shell: /bin/bash
+    - groups:
+      - wheel
+
+devops-ssh-key:
+  ssh_auth.present:
+    - user: devops
+    - source: salt://files/devops_id_rsa.pub
+----
+
+.Ansible (after) — `ansible/roles/users/tasks/main.yml`
+[source,yaml]
+----
+- name: "Manage user: {{ item.name }}"
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    uid: "{{ item.uid | default(omit) }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    groups: "{{ item.groups | default([]) }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ managed_users }}"
+
+- name: "Deploy SSH key for {{ item.0.name }}"
+  ansible.posix.authorized_key:
+    user: "{{ item.0.name }}"
+    key: "{{ item.1 }}"
+    state: present
+  loop: "{{ managed_users | subelements('ssh_keys', skip_missing=True) }}"
+----
+
+=== firewall.sls → firewall role
+
+.Salt (before)
+[source,yaml]
+----
+ensure-firewalld:
+  pkg.installed:
+    - name: firewalld
+  service.running:
+    - name: firewalld
+    - enable: True
+
+open-ssh:
+  firewalld.present:
+    - name: ssh
+    - zone: public
+    - permanent: True
+    - immediate: True
+----
+
+.Ansible (after) — `ansible/roles/firewall/tasks/main.yml`
+[source,yaml]
+----
+- name: Ensure firewalld is installed and running
+  ansible.builtin.systemd:
+    name: firewalld
+    state: started
+    enabled: true
+
+- name: Allow services through firewall
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    zone: "{{ firewall_default_zone }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ firewall_allowed_services }}"
+----
+
+=== containers.sls → Terraform + podman_containers role
+
+.Salt (before)
+[source,yaml]
+----
+nginx-container:
+  cmd.run:
+    - name: "podman run -d --name salt-nginx -p 8080:80 nginx:alpine"
+    - unless: "podman ps --format '{{.Names}}' | grep -q '^salt-nginx'"
+----
+
+.Terraform (after) — `terraform/terraform.tfvars`
+[source,hcl]
+----
+container_services = {
+  nginx = {
+    image = "docker.io/library/nginx"
+    tag   = "alpine"
+    ports = [{ internal = 80, external = 8080 }]
+  }
+}
+----
+
+.Ansible alternative — `ansible/inventory/group_vars/all.yml`
+[source,yaml]
+----
+podman_containers:
+  - name: infra-nginx
+    image: docker.io/library/nginx:alpine
+    state: started
+    ports:
+      - "8080:80"
+----
+
+== Migration Checklist
+
+. [ ] Inventory: Create `hosts.yml` with all managed hosts
+. [ ] Variables: Migrate Pillar data to `group_vars/all.yml`
+. [ ] Test: Run `ansible-playbook site.yml --check --diff` (dry run)
+. [ ] Apply: Run `ansible-playbook site.yml`
+. [ ] Verify: Run `scripts/self-check.sh`
+. [ ] Terraform: Run `terraform plan` then `terraform apply` for containers
+. [ ] Decommission: Stop and remove Salt master/minion containers
+. [ ] Cleanup: Remove `~/salt-container/` directory
+
+== Decommissioning Salt
+
+Once Ansible + Terraform are verified working:
+
+[source,bash]
+----
+# Stop Salt containers
+cd ~/salt-container
+./salt-manage.sh stop
+
+# Remove Salt containers and pod
+podman pod rm -f salt-pod
+
+# Archive Salt configuration (optional)
+mv ~/salt-container ~/salt-container-archive-$(date +%F)
+
+# Remove rpm-ostree Salt packages if layered
+sudo rpm-ostree uninstall salt-master salt-minion salt-api salt-ssh
+----

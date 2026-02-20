@@ -1,0 +1,20 @@
+{# SPDX-License-Identifier: PMPL-1.0-or-later #}
+{# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk> #}
+{#
+   networking role - resolv.conf template
+   Only deployed when manage_resolv_conf is true.
+#}
+# Managed by Ansible - infrastructure-automation networking role
+# Do not edit manually; changes will be overwritten on next playbook run.
+
+{% if nameservers is defined %}
+{% for ns in nameservers %}
+nameserver {{ ns }}
+{% endfor %}
+{% else %}
+nameserver 1.1.1.1
+nameserver 9.9.9.9
+{% endif %}
+{% if search_domains is defined %}
+search {{ search_domains | join(' ') }}
+{% endif %}

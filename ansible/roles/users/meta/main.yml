@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# meta/main.yml - Role metadata for users.
+---
+
+galaxy_info:
+  role_name: users
+  author: "Jonathan D.A. Jewell"
+  description: >-
+    Create and manage user accounts, supplementary group membership, SSH
+    authorized_keys, and home directory permissions. Supports user removal
+    via state=absent. Uses ansible.posix.authorized_key for SSH key management.
+  license: "PMPL-1.0-or-later"
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Fedora
+      versions:
+        - 42
+        - 43
+  galaxy_tags:
+    - users
+    - accounts
+    - ssh
+    - security
+    - fedora
+
+dependencies: []

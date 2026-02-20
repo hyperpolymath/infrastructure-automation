@@ -1,0 +1,107 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# tasks/main.yml - Configure sudo access.
+# Ensures sudo is installed, deploys drop-in files to /etc/sudoers.d/,
+# and validates syntax before finalizing changes.
+---
+
+- name: Ensure sudo is installed
+  ansible.builtin.dnf:
+    name: sudo
+    state: present
+  become: true
+  tags:
+    - sudo_config
+    - install
+
+- name: Ensure /etc/sudoers.d directory exists
+  ansible.builtin.file:
+    path: /etc/sudoers.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  become: true
+  tags:
+    - sudo_config
+    - directory
+
+- name: Configure wheel group passwordless sudo
+  ansible.builtin.copy:
+    content: |
+      # SPDX-License-Identifier: PMPL-1.0-or-later
+      # Managed by Ansible - infrastructure-automation
+      # Do not edit manually; changes will be overwritten.
+      {% if sudo_wheel_nopasswd %}
+      %wheel ALL=(ALL) NOPASSWD: ALL
+      {% else %}
+      %wheel ALL=(ALL) ALL
+      {% endif %}
+    dest: /etc/sudoers.d/10-wheel
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  become: true
+  tags:
+    - sudo_config
+    - wheel
+
+- name: Deploy custom sudoers drop-in rules
+  ansible.builtin.template:
+    src: sudoers_rule.j2
+    dest: "/etc/sudoers.d/50-{{ item.name }}"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  loop: "{{ sudo_custom_rules }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: sudo_custom_rules | length > 0
+  become: true
+  tags:
+    - sudo_config
+    - rules
+
+- name: Remove unmanaged custom sudoers rules
+  ansible.builtin.find:
+    paths: /etc/sudoers.d
+    patterns: "50-*"
+  register: _existing_sudoers_rules
+  become: true
+  tags:
+    - sudo_config
+    - cleanup
+
+- name: Build list of expected sudoers rule filenames
+  ansible.builtin.set_fact:
+    _expected_sudoers_files: "{{ sudo_custom_rules | map(attribute='name') | map('regex_replace', '^', '50-') | list }}"
+  tags:
+    - sudo_config
+    - cleanup
+
+- name: Remove stale custom sudoers drop-in files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ _existing_sudoers_rules.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when: item.path | basename not in _expected_sudoers_files
+  become: true
+  tags:
+    - sudo_config
+    - cleanup
+
+- name: Validate main sudoers file syntax
+  ansible.builtin.command:
+    cmd: visudo -c
+  register: _visudo_check
+  changed_when: false
+  failed_when: _visudo_check.rc != 0
+  become: true
+  tags:
+    - sudo_config
+    - validate

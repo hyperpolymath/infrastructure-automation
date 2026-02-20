@@ -1,0 +1,74 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# tasks/main.yml - Manage static configuration files.
+# Deploys /etc/motd and /etc/profile.d/infrastructure.sh with controlled
+# content and permissions.
+---
+
+- name: Deploy /etc/motd with banner message
+  ansible.builtin.copy:
+    content: "{{ motd_message }}"
+    dest: /etc/motd
+    owner: root
+    group: root
+    mode: "{{ motd_file_mode }}"
+  become: true
+  tags:
+    - files_managed
+    - motd
+
+- name: Ensure /etc/profile.d directory exists
+  ansible.builtin.file:
+    path: /etc/profile.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  become: true
+  tags:
+    - files_managed
+    - profile
+
+- name: Deploy /etc/profile.d/infrastructure.sh with custom environment variables
+  ansible.builtin.copy:
+    content: |
+      # SPDX-License-Identifier: PMPL-1.0-or-later
+      # Managed by Ansible - infrastructure-automation
+      # Do not edit manually; changes will be overwritten.
+      {% for key, value in infrastructure_env_vars.items() %}
+      export {{ key }}="{{ value }}"
+      {% endfor %}
+    dest: /etc/profile.d/infrastructure.sh
+    owner: root
+    group: root
+    mode: "{{ profile_script_mode }}"
+  become: true
+  tags:
+    - files_managed
+    - profile
+    - env
+
+- name: Verify /etc/motd permissions are correct
+  ansible.builtin.file:
+    path: /etc/motd
+    owner: root
+    group: root
+    mode: "{{ motd_file_mode }}"
+  become: true
+  tags:
+    - files_managed
+    - motd
+    - permissions
+
+- name: Verify /etc/profile.d/infrastructure.sh permissions are correct
+  ansible.builtin.file:
+    path: /etc/profile.d/infrastructure.sh
+    owner: root
+    group: root
+    mode: "{{ profile_script_mode }}"
+  become: true
+  tags:
+    - files_managed
+    - profile
+    - permissions

@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+#
+# defaults/main.yml - Default variables for the files_managed role.
+# Controls the content of /etc/motd and /etc/profile.d/infrastructure.sh.
+---
+
+# Message of the day displayed at login.
+motd_message: |
+  ========================================================================
+    Managed by Ansible - infrastructure-automation
+    Unauthorized access is prohibited. All activity is logged.
+  ========================================================================
+
+# Custom environment variables deployed to /etc/profile.d/infrastructure.sh.
+# Each entry is a key-value pair exported as a shell variable.
+infrastructure_env_vars:
+  INFRA_MANAGED: "true"
+  INFRA_REPO: "infrastructure-automation"
+
+# File permissions for managed files.
+motd_file_mode: "0644"
+profile_script_mode: "0644"
