@@ -23,14 +23,14 @@ RESULTS=()
 
 # ── Colours ───────────────────────────────────────────────────
 if [ "$JSON_MODE" = "--json" ]; then
-    pass() { RESULTS+=("{\"check\":\"$1\",\"status\":\"pass\"}"); ((CHECKS_PASSED++)); }
-    fail() { RESULTS+=("{\"check\":\"$1\",\"status\":\"fail\",\"detail\":\"$2\"}"); ((CHECKS_FAILED++)); }
-    skip() { RESULTS+=("{\"check\":\"$1\",\"status\":\"skip\",\"reason\":\"$2\"}"); ((CHECKS_SKIPPED++)); }
+    pass() { RESULTS+=("{\"check\":\"$1\",\"status\":\"pass\"}"); CHECKS_PASSED=$((CHECKS_PASSED + 1)); }
+    fail() { RESULTS+=("{\"check\":\"$1\",\"status\":\"fail\",\"detail\":\"$2\"}"); CHECKS_FAILED=$((CHECKS_FAILED + 1)); }
+    skip() { RESULTS+=("{\"check\":\"$1\",\"status\":\"skip\",\"reason\":\"$2\"}"); CHECKS_SKIPPED=$((CHECKS_SKIPPED + 1)); }
 else
     GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
-    pass() { printf "${GREEN}[PASS]${NC} %s\n" "$1"; ((CHECKS_PASSED++)); }
-    fail() { printf "${RED}[FAIL]${NC} %s — %s\n" "$1" "$2"; ((CHECKS_FAILED++)); }
-    skip() { printf "${YELLOW}[SKIP]${NC} %s — %s\n" "$1" "$2"; ((CHECKS_SKIPPED++)); }
+    pass() { printf "${GREEN}[PASS]${NC} %s\n" "$1"; CHECKS_PASSED=$((CHECKS_PASSED + 1)); }
+    fail() { printf "${RED}[FAIL]${NC} %s — %s\n" "$1" "$2"; CHECKS_FAILED=$((CHECKS_FAILED + 1)); }
+    skip() { printf "${YELLOW}[SKIP]${NC} %s — %s\n" "$1" "$2"; CHECKS_SKIPPED=$((CHECKS_SKIPPED + 1)); }
     info() { printf "${BLUE}[....]${NC} %s\n" "$1"; }
 fi
 
