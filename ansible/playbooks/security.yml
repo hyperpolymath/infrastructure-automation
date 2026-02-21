@@ -1,14 +1,15 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
+
+# Security Playbook — Hardening and Perimeter Control.
 #
-# security.yml — Hardening layer playbook
+# This playbook implements the Layer 2 security controls for the project 
+# hosts. It is designed to be run after the base OS foundation is established.
 #
-# Applies security controls on top of the base layer. This includes
-# firewall rules (firewalld) and sudo configuration. These roles
-# require privilege escalation and should be run after base.yml.
-#
-# Roles applied:
-#   - firewall    : Manages firewalld zones, allowed services, and ports
-#   - sudo_config : Manages /etc/sudoers.d/ drop-in rules
+# SECURITY DOMAINS:
+# 1. **Firewall**: Enforces zone-based network isolation via firewalld.
+# 2. **Sudo**: Manages administrative privileges using strict /etc/sudoers.d/ 
+#    drop-in policies.
+
 ---
 
 - name: "Security — Hardening Layer"
@@ -17,25 +18,15 @@
   gather_facts: false
 
   pre_tasks:
-    - name: "Gather only required facts (OS family, services)"
+    - name: "Gather minimal facts"
+      # OPTIMIZATION: Only gathers what is needed for security logic 
+      # (distribution and service manager) to reduce convergence time.
       ansible.builtin.setup:
-        gather_subset:
-          - "!all"
-          - "!min"
-          - distribution
-          - service_mgr
-      tags: [always]
-
-    - name: "Display security convergence target"
-      ansible.builtin.debug:
-        msg: >-
-          Converging security layer on {{ inventory_hostname }}
-          (firewall_backend={{ firewall_backend | default('firewalld') }})
-      tags: [always]
+        gather_subset: ["!all", "!min", "distribution", "service_mgr"]
 
   roles:
     - role: firewall
       tags: [security, firewall]
 
     - role: sudo_config
-      tags: [security, sudo, sudo_config]
+      tags: [security, sudo]

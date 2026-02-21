@@ -1,15 +1,16 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+# handlers/main.yml — Firewall State Handlers.
 #
-# handlers/main.yml - Handlers for the firewall role.
-# Triggered when firewall rules change and a reload is needed.
+# This file defines the reactive tasks triggered by firewall 
+# configuration changes. It ensures that rules are atomically 
+# applied to the running kernel.
+
 ---
 
 - name: Reload firewalld
-  ansible.builtin.command:
-    cmd: firewall-cmd --reload
+  # RELOAD: Atomically flushes and re-applies all permanent rules 
+  # to the active nftables/iptables chains.
+  ansible.builtin.service:
+    name: firewalld
+    state: reloaded
   become: true
-  changed_when: true
-  tags:
-    - firewall
-    - reload

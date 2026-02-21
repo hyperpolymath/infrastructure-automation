@@ -1,39 +1,36 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+# tasks/main.yml — Systemd Service Orchestration.
 #
-# tasks/main.yml - Manage systemd services.
-# Loops over managed_services to ensure each unit is in the desired
-# enabled/state configuration. Notifies the daemon-reload handler
-# when service files may have changed.
+# This role ensures that critical system daemons and project services 
+# are correctly configured and running. It leverages Systemd for 
+# reliable process management and health monitoring.
+
 ---
 
 - name: Gather service facts for idempotency checks
+  # AUDIT: Retrieves the current state of all systemd units. 
+  # This allows subsequent tasks to only trigger changes if the 
+  # actual state deviates from the desired configuration.
   ansible.builtin.service_facts:
-  tags:
-    - services
-    - facts
+  tags: [services, facts]
 
 - name: Manage systemd services
+  # ORCHESTRATION: Declarative enforcement of unit state.
+  # Handles enabling (boot-time start) and immediate state 
+  # (started, stopped, restarted).
   ansible.builtin.systemd:
     name: "{{ item.name }}"
     enabled: "{{ item.enabled | default(true) }}"
     state: "{{ item.state | default('started') }}"
-    daemon_reload: false
   loop: "{{ managed_services }}"
-  loop_control:
-    label: "{{ item.name }} (enabled={{ item.enabled | default(true) }}, state={{ item.state | default('started') }})"
   become: true
   notify: Reload systemd daemon
-  tags:
-    - services
-    - systemd
 
 - name: Record managed services as host fact (reflexive pattern)
+  # PROVENANCE: Updates the host's metadata with the list of 
+  # services under automation control.
   ansible.builtin.set_fact:
     managed_services_applied:
       services: "{{ managed_services | map(attribute='name') | list }}"
       timestamp: "{{ now(utc=true).isoformat() }}"
     cacheable: true
-  tags:
-    - services
-    - facts

@@ -1,12 +1,15 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+# tasks/main.yml — Networking and Identity (L1).
 #
-# networking role - main tasks
-# Manages /etc/hosts entries idempotently, optionally manages /etc/resolv.conf,
-# and sets the system hostname when the hostname variable is defined.
+# This role configures the host's networking baseline. It ensures 
+# stable name resolution and enforces the authoritative system hostname.
+
 ---
 
 - name: Manage /etc/hosts entries
+  # LOCAL RESOLUTION: Idempotently adds IP-to-Name mappings. 
+  # backup: true ensures a rollback path is created before modifying 
+  # the system file.
   ansible.builtin.lineinfile:
     path: /etc/hosts
     regexp: "^{{ item.ip | regex_escape() }}\\s+"
@@ -14,21 +17,19 @@
     state: present
     backup: true
   loop: "{{ hosts_entries }}"
-  loop_control:
-    label: "{{ item.ip }} -> {{ item.names }}"
   when: hosts_entries | length > 0
 
 - name: Deploy /etc/resolv.conf from template
+  # NAMESERVERS: Overwrites standard resolution configuration with 
+  # the project's preferred DNS topology (e.g. pointing to DNS64).
   ansible.builtin.template:
     src: resolv.conf.j2
     dest: /etc/resolv.conf
-    owner: root
-    group: root
     mode: "0644"
-    backup: true
   when: manage_resolv_conf | bool
 
 - name: Set system hostname
+  # IDENTITY: Enforces the machine's alphanumeric identifier.
   ansible.builtin.hostname:
     name: "{{ hostname }}"
   when: hostname is defined

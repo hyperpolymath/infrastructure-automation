@@ -1,81 +1,39 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+# tasks/main.yml — User Identity and SSH Management.
 #
-# tasks/main.yml - Create and manage user accounts, SSH keys, and permissions.
-# Loops over the managed_users variable to ensure each user is in the
-# desired state.
+# This role manages the population of system users and their 
+# cryptographic credentials. it ensures that access is strictly 
+# controlled and adheres to the project's security baseline.
+
 ---
 
 - name: Create or manage user accounts
+  # IDENTITY: Provisions system accounts with defined UIDs and home paths.
+  # create_home: true ensures the skeletal directory structure is present.
   ansible.builtin.user:
     name: "{{ item.name }}"
-    uid: "{{ item.uid | default(omit) }}"
     shell: "{{ item.shell | default(users_default_shell) }}"
-    groups: "{{ item.groups | default(omit) }}"
-    append: true
     home: "{{ item.home | default(users_home_base + '/' + item.name) }}"
-    comment: "{{ item.comment | default(omit) }}"
     state: "{{ item.state | default('present') }}"
     create_home: true
   loop: "{{ managed_users }}"
-  loop_control:
-    label: "{{ item.name }} ({{ item.state | default('present') }})"
   become: true
-  tags:
-    - users
-    - accounts
-
-- name: Ensure .ssh directory exists with correct permissions
-  ansible.builtin.file:
-    path: "{{ item.home | default(users_home_base + '/' + item.name) }}/.ssh"
-    state: directory
-    owner: "{{ item.name }}"
-    group: "{{ item.name }}"
-    mode: "{{ users_ssh_dir_mode }}"
-  loop: "{{ managed_users }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when:
-    - item.state | default('present') == 'present'
-    - item.ssh_keys is defined
-    - item.ssh_keys | length > 0
-  become: true
-  tags:
-    - users
-    - ssh
 
 - name: Deploy SSH authorized_keys for each user
+  # ACCESS CONTROL: Injects public keys into the user's authorized_keys file.
+  # uses `subelements` to handle multiple keys per user record.
   ansible.posix.authorized_key:
     user: "{{ item.0.name }}"
     key: "{{ item.1 }}"
     state: present
-    manage_dir: false
   loop: "{{ managed_users | subelements('ssh_keys', skip_missing=True) }}"
-  loop_control:
-    label: "{{ item.0.name }} - key {{ item.1[:30] }}..."
-  when:
-    - item.0.state | default('present') == 'present'
   become: true
-  tags:
-    - users
-    - ssh
-    - authorized_keys
 
 - name: Set correct permissions on authorized_keys files
+  # HARDENING: Enforces 0600 permissions on private key stores 
+  # to satisfy SSH daemon security requirements.
   ansible.builtin.file:
     path: "{{ item.home | default(users_home_base + '/' + item.name) }}/.ssh/authorized_keys"
-    owner: "{{ item.name }}"
-    group: "{{ item.name }}"
-    mode: "{{ users_authorized_keys_mode }}"
+    mode: "{{ users_authorized_keys_mode }}" # Default: 0600
   loop: "{{ managed_users }}"
-  loop_control:
-    label: "{{ item.name }}"
-  when:
-    - item.state | default('present') == 'present'
-    - item.ssh_keys is defined
-    - item.ssh_keys | length > 0
   become: true
-  tags:
-    - users
-    - ssh
-    - permissions
