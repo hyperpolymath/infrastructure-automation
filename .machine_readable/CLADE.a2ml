@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Clade declaration — part of the gv-clade-index registry
+# See: https://github.com/hyperpolymath/gv-clade-index
+
+[identity]
+uuid = "5b5c69bc-7700-536c-8210-4c54f81f6ce3"
+primary-forge = "github"
+primary-owner = "hyperpolymath"
+canonical-name = "infrastructure-automation"
+prefixed-name = "ix-infrastructure-automation"
+
+[clade]
+primary = "ix"
+secondary = []
+assigned = "2026-03-16"
+rationale = ""
+
+[forges]
+github = "hyperpolymath/infrastructure-automation"
+gitlab = "hyperpolymath/infrastructure-automation"
+bitbucket = "hyperpolymath/infrastructure-automation"
+
+[lineage]
+type = "standalone"
+parent = "Infrastructure automation scripts and tools"
+born = "2026-03-16"
