@@ -6,7 +6,7 @@
   (version "1.0.0")
   (repo-name "infrastructure-automation")
   (owner "hyperpolymath")
-  (author "Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>")
+  (author "Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>")
 
   (purpose
     "Complete infrastructure-as-code replacement for SaltStack.

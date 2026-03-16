@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: PMPL-1.0-or-later
-# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <jonathan.jewell@open.ac.uk>
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # development role - main tasks
 # Ensures asdf is installed, installs language plugins via asdf, sets up
@@ -79,7 +79,7 @@
 
 - name: Configure git user email for primary user
   ansible.builtin.command:
-    cmd: git config --global user.email "jonathan.jewell@open.ac.uk"
+    cmd: git config --global user.email "j.d.a.jewell@open.ac.uk"
   register: dev_git_email_result
   changed_when: false
   become: true

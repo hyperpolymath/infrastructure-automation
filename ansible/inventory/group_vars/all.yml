@@ -11,7 +11,7 @@
 # ── Identity ──────────────────────────────────────────────────
 infra_org: "hyperpolymath"
 infra_author: "Jonathan D.A. Jewell"
-infra_email: "jonathan.jewell@open.ac.uk"
+infra_email: "j.d.a.jewell@open.ac.uk"
 infra_license: "PMPL-1.0-or-later"
 
 # ── System ────────────────────────────────────────────────────

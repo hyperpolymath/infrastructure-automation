@@ -1,5 +1,5 @@
 = Quickstart — infrastructure-automation
-Jonathan D.A. Jewell <jonathan.jewell@open.ac.uk>
+Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 v1.0.0, 2026-02-20
 :toc:
 :toc-title: Contents

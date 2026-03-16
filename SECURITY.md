@@ -3,7 +3,7 @@
 
 ## Reporting Vulnerabilities
 
-Report security issues to: jonathan.jewell@open.ac.uk
+Report security issues to: j.d.a.jewell@open.ac.uk
 
 Do NOT open public issues for security vulnerabilities.
 

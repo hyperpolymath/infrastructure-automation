@@ -11,4 +11,4 @@ This project follows the [Contributor Covenant](https://www.contributor-covenant
 
 ## Contact
 
-jonathan.jewell@open.ac.uk
+j.d.a.jewell@open.ac.uk
