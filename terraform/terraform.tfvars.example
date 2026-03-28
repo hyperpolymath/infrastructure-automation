@@ -20,7 +20,7 @@ container_services = {
     ]
     volumes = [
       {
-        host_path      = "/var/mnt/eclipse/repos/infrastructure-automation/data/nginx/html"
+        host_path      = "/var$REPOS_DIR/infrastructure-automation/data/nginx/html"
         container_path = "/usr/share/nginx/html"
         read_only      = true
       }
@@ -45,7 +45,7 @@ container_services = {
   #   ]
   #   volumes = [
   #     {
-  #       host_path      = "/var/mnt/eclipse/repos/infrastructure-automation/data/grafana"
+  #       host_path      = "/var$REPOS_DIR/infrastructure-automation/data/grafana"
   #       container_path = "/var/lib/grafana"
   #     }
   #   ]

@@ -160,7 +160,7 @@ site.yml
 == HAR Integration
 
 The hybrid-automation-router (HAR) at
-`/var/mnt/eclipse/repos/ambientops/hybrid-automation-router/` can parse
+`/var$REPOS_DIR/ambientops/hybrid-automation-router/` can parse
 these Ansible playbooks and Terraform configs for translation to other
 IaC formats.
 
