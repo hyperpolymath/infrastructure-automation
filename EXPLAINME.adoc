@@ -1,24 +1,251 @@
 // SPDX-License-Identifier: PMPL-1.0-or-later
+// Copyright (c) 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 = infrastructure-automation — Show Me The Receipts
 :toc:
+:toclevels: 3
 :icons: font
 
-The README makes claims. This file backs them up.
+The README describes a replacement for SaltStack using Ansible + Terraform,
+designed for Fedora Silverblue. This file traces the Ansible role structure,
+Terraform container model, critical configuration paths, and how the repo is
+checked for correctness.
+
+== Claims from the README
 
 [quote, README]
 ____
-Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+Complete infrastructure-as-code for local system management, replacing
+SaltStack with modern Ansible + Terraform. Ansible manages configuration
+— packages, users, files, services, firewall, monitoring, networking.
+Terraform manages container provisioning with declarative lifecycle
+management of Podman containers with state tracking.
 ____
+
+*How it works.* The Ansible side is structured as a master playbook
+(`ansible/playbooks/site.yml`) that imports eleven focused sub-playbooks.
+Each sub-playbook maps to a role under `ansible/roles/`. The inventory lives
+at `ansible/inventory/group_vars/all.yml`, which is the single file a deployer
+is expected to edit — the README's "homoiconic" principle: `group_vars/all.yml`
+IS the system specification. `ansible.cfg` sets the default inventory path and
+configures SSH options. `ansible/requirements.yml` declares any Galaxy
+collection dependencies.
+
+The Terraform side lives in `terraform/`. `main.tf` references modules in
+`terraform/modules/` to declare Podman containers as Terraform resources.
+`variables.tf` and `outputs.tf` define the input/output surface. The `examples`
+directory under `terraform/environments/` provides per-environment
+`terraform.tfvars` starting points. Container lifecycle state is tracked in
+Terraform's state file.
+
+*Honest caveat.* "Replacing SaltStack" is aspirational — no automated migration
+script converts existing Salt state trees. `scripts/self-check.sh` validates
+the current system against `group_vars/all.yml`, but it reports divergences
+rather than fixing them. The `silverblue` role handles `rpm-ostree` overlays
+for packages that cannot go into a user-writable container, but `rpm-ostree`
+changes require a reboot; the playbook does not automate reboots.
+
+*Critical path.* Edit `ansible/inventory/group_vars/all.yml` →
+`just check` (calls `ansible-playbook --check --diff playbooks/site.yml`) →
+review diff output → `just apply` (calls `ansible-playbook playbooks/site.yml`)
+→ system converges.
+
+[quote, README]
+____
+Homoiconic: `group_vars/all.yml` IS the system specification. Reflexive:
+the system inspects its own state. Dependable: all operations are idempotent.
+____
+
+*How it works.* The "homoiconic" property holds because all 11 Ansible roles
+source their parameters exclusively from `group_vars/all.yml` — no role
+contains hard-coded values. The `base_packages` role reads a package list
+variable; the `users` role reads a users-and-ssh-keys variable; the `firewall`
+role reads a ports variable; and so on. The "reflexive" property is realised
+by `scripts/self-check.sh`, which queries the live system (installed packages,
+running services, firewall rules) and diffs against what `group_vars/all.yml`
+declares. `just self-check` invokes this script and exits non-zero if drift
+is detected. The "idempotent" property is enforced by Ansible's module design
+— every module task is a desired-state declaration, not an imperative script.
+
+*Honest caveat.* The `podman_containers` role creates containers but does not
+currently manage container image updates (pull-on-drift). Image versions are
+pinned in `group_vars/all.yml`, so a new image requires an explicit variable
+change followed by `just apply-containers`.
+
+*Critical path.* `just self-check` → `scripts/self-check.sh` →
+queries `rpm -qa`, `systemctl is-active`, `firewall-cmd --list-all` →
+diffs against `group_vars/all.yml` declarations → prints divergence report.
+
+== How It Is Checked
+
+[source,bash]
+----
+just check         # Ansible dry run against local inventory
+just self-check    # State drift detection
+deno test --allow-read tests/
+----
+
+The `tests/` directory holds Deno tests that validate:
+
+* Required files exist (`ansible/playbooks/site.yml`,
+  `ansible/inventory/group_vars/all.yml`, `terraform/main.tf`,
+  `scripts/bootstrap.sh`).
+* All 11 role directories exist under `ansible/roles/`.
+* `justfile` contains the required recipe names.
+* No hardcoded `/var/mnt/eclipse` paths leak into source files.
+
+CI runs `ansible-lint` (via the `quality.yml` workflow) against all playbooks
+and roles. TruffleHog scans for accidentally committed secrets (Ansible Vault
+passphrases, SSH keys).
+
+== Dogfooded Across The Account
+
+[cols="2,3", options="header"]
+|===
+| Consumer | How it uses this repo
+
+| `ambientops` (HAR — Hybrid Automation Router)
+| The README explicitly notes compatibility with `ambientops/hybrid-automation-router`
+  for IaC translation. HAR can consume the Ansible role definitions and emit
+  equivalent SaltStack or Nix expressions.
+
+| `gitbot-fleet`
+| The gitbot fleet containers (rhodibot, echidnabot, sustainabot, glambot,
+  seambot, finishbot) are declared in `terraform/environments/` as Podman
+  containers managed by this repo.
+
+| `kea`
+| The `networking` role configures Kea DHCP leases and `/etc/hosts` for the
+  local network. `kea` is the service that infrastructure-automation manages.
+
+| `hesiod-dns-map`
+| The `networking` role writes Hesiod DNS map entries; `hesiod-dns-map` is
+  the data source for the host-to-IP mappings injected here.
+
+| `zerotier-k8s-link`
+| The `networking` role configures the ZeroTier network interface and ensures
+  the `zerotier-one` service is running and enabled.
+
+| Developer workstation
+| This is the live system configuration for the Eclipse-drive Fedora Silverblue
+  workstation. Running `just apply` on the developer machine converges the host
+  to the declared state.
+|===
 
 == File Map
 
-[cols="1,2"]
+[cols="2,3", options="header"]
 |===
 | Path | What's There
 
-| `test(s)/` | Test suite
+| `ansible/inventory/group_vars/all.yml`
+| *THE* configuration file. Edit this to change the desired system state.
+  Contains package lists, user definitions, SSH keys, firewall port rules,
+  service enable/disable lists, container definitions, and hostname/DNS config.
+
+| `ansible/playbooks/site.yml`
+| Master playbook. Imports all 11 sub-playbooks in dependency order.
+
+| `ansible/playbooks/base.yml`
+| Imports `base_packages`, `users`, `files_managed`, `services`, `networking`.
+
+| `ansible/playbooks/security.yml`
+| Imports `firewall`, `sudo_config`.
+
+| `ansible/playbooks/monitoring.yml`
+| Imports `monitoring`.
+
+| `ansible/playbooks/containers.yml`
+| Imports `podman_containers`.
+
+| `ansible/playbooks/development.yml`
+| Imports `development` (asdf, Rust toolchain, language runtimes).
+
+| `ansible/roles/base_packages/`
+| Installs/removes packages via `dnf`. Reads `packages_present` and
+  `packages_absent` from `group_vars/all.yml`.
+
+| `ansible/roles/users/`
+| Creates user accounts, sets shells, deploys authorized SSH keys.
+
+| `ansible/roles/files_managed/`
+| Deploys `/etc/motd`, shell profile fragments, and other managed config files.
+
+| `ansible/roles/services/`
+| Ensures systemd services are in their declared enabled/running state.
+
+| `ansible/roles/firewall/`
+| Configures `firewalld` zones and port rules. Declarative: ports not in
+  `group_vars/all.yml` are removed.
+
+| `ansible/roles/sudo_config/`
+| Writes drop-in files to `/etc/sudoers.d/`. Avoids editing `/etc/sudoers` directly.
+
+| `ansible/roles/monitoring/`
+| Installs monitoring tools and deploys self-monitoring scripts.
+
+| `ansible/roles/networking/`
+| Sets `/etc/hosts`, hostname, DNS resolver config, and ZeroTier interface config.
+
+| `ansible/roles/podman_containers/`
+| Creates/updates/removes Podman containers using the declared image and
+  options from `group_vars/all.yml`. Does not pull new images automatically.
+
+| `ansible/roles/silverblue/`
+| Handles Fedora Silverblue–specific tasks: `rpm-ostree` package overlays,
+  immutable OS adaptations.
+
+| `ansible/roles/development/`
+| Installs asdf and language runtimes (Rust nightly, Node via asdf, etc.).
+
+| `ansible/ansible.cfg`
+| Ansible configuration: default inventory path, SSH pipelining, fact caching.
+
+| `ansible/requirements.yml`
+| Ansible Galaxy collection dependencies.
+
+| `terraform/main.tf`
+| Container provisioning declarations. Imports modules from `terraform/modules/`.
+
+| `terraform/variables.tf` / `terraform/outputs.tf`
+| Input variable definitions and output value declarations.
+
+| `terraform/providers.tf` / `terraform/versions.tf`
+| Provider and Terraform version constraints.
+
+| `terraform/terraform.tfvars.example`
+| Template for site-specific variable values. Copy to `terraform.tfvars`.
+
+| `terraform/modules/`
+| Reusable Terraform modules for Podman container types.
+
+| `terraform/environments/`
+| Per-environment `terraform.tfvars` files.
+
+| `scripts/bootstrap.sh`
+| First-time setup: installs Ansible, Terraform, `just`, and Deno.
+
+| `scripts/self-check.sh`
+| Live state validation: queries the system and diffs against `group_vars/all.yml`.
+
+| `docs/`
+| Architecture notes, migration guide from SaltStack, and quickstart guides.
+
+| `Justfile`
+| All entry points: `apply`, `check`, `apply-tags`, `apply-security`,
+  `apply-containers`, `apply-dev`, `self-check`, `report`, `tf-plan`,
+  `tf-apply`, `bootstrap`, `migrate`.
+
+| `tests/`
+| Deno test suite for structural validation.
+
+| `0-AI-MANIFEST.a2ml`
+| AI agent manifest for this repo.
+
+| `TOPOLOGY.md`
+| Visual architecture map and completion dashboard.
 |===
 
 == Questions?
 
-Open an issue or reach out directly — happy to explain anything in more detail.
+Open an issue on GitHub or reach out to Jonathan D.A. Jewell
+<j.d.a.jewell@open.ac.uk> — happy to explain anything in more detail.
