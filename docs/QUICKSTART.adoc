@@ -123,7 +123,7 @@ infrastructure-automation/
 │   ├── self-check.sh         ← State validation
 │   └── migrate-from-salt.sh  ← Salt migration helper
 ├── docs/                     ← You are here
-└── justfile                  ← Task runner (replaces make)
+└── Justfile                  ← Task runner (replaces make)
 ----
 
 == Troubleshooting
