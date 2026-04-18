@@ -12,7 +12,7 @@ status = "active"
 name = "infrastructure-automation"
 completion-percentage = 0
 phase = "In development"
-crg-grade = "C"
+crg-grade = "E"
 test-coverage = "complete"
 
 [crg-c-gates]
