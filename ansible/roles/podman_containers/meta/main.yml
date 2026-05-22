@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # podman_containers role - metadata
@@ -11,7 +11,7 @@ galaxy_info:
     Manage podman containers declaratively. Supports rootless mode, port
     mappings, volume mounts, environment variables, and automatic cleanup
     of containers marked as absent.
-  license: "PMPL-1.0-or-later"
+  license: "MPL-2.0"
   company: hyperpolymath
 
   min_ansible_version: "2.14"

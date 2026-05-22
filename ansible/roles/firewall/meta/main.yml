@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # meta/main.yml - Role metadata for firewall.
@@ -11,7 +11,7 @@ galaxy_info:
     Configure firewalld on Fedora hosts. Ensures firewalld is installed and
     running, sets the default zone, and manages allowed services and ports.
     Uses ansible.posix.firewalld for idempotent rule management.
-  license: "PMPL-1.0-or-later"
+  license: "MPL-2.0"
   min_ansible_version: "2.16"
   platforms:
     - name: Fedora

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # meta/main.yml - Role metadata for services.
@@ -11,7 +11,7 @@ galaxy_info:
     Manage systemd services declaratively. Ensures each service in the
     managed_services list is in the desired enabled and running state.
     Includes a daemon-reload handler for unit file changes.
-  license: "PMPL-1.0-or-later"
+  license: "MPL-2.0"
   min_ansible_version: "2.16"
   platforms:
     - name: Fedora

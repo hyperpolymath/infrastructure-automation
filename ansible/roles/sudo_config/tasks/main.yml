@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # tasks/main.yml — Sudo Access Control (L2 Hardening).
 #
 # This role manages administrative privileges on the host. It utilizes 

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # tasks/main.yml — User Identity and SSH Management.
 #
 # This role manages the population of system users and their 

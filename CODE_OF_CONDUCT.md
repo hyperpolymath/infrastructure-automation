@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
+<!-- SPDX-License-Identifier: MPL-2.0 -->
 # Code of Conduct
 
 This project follows the [Contributor Covenant](https://www.contributor-covenant.org/) v2.1.

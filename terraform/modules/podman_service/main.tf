@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Podman Service Module — reusable container service definition
 #
 # This module encapsulates a single container service with:

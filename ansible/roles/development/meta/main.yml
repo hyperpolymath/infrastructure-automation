@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # development role - metadata
@@ -11,7 +11,7 @@ galaxy_info:
     Set up a development environment with asdf-managed language toolchains
     (Rust, Elixir, Gleam), git configuration, workspace directories, and
     a global .editorconfig for the primary user.
-  license: "PMPL-1.0-or-later"
+  license: "MPL-2.0"
   company: hyperpolymath
 
   min_ansible_version: "2.14"

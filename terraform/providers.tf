@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Provider Configuration
 #
 # Uses kreuzwerker/docker provider against Podman's Docker-compatible socket.

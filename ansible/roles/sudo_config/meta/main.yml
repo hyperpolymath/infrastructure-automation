@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # meta/main.yml - Role metadata for sudo_config.
@@ -12,7 +12,7 @@ galaxy_info:
     passwordless setting and deploys custom sudoers drop-in rules to
     /etc/sudoers.d/. All rules are validated with visudo before deployment.
     Stale rules are automatically cleaned up.
-  license: "PMPL-1.0-or-later"
+  license: "MPL-2.0"
   min_ansible_version: "2.16"
   platforms:
     - name: Fedora

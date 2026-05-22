@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: PMPL-1.0-or-later -->
+<!-- SPDX-License-Identifier: MPL-2.0 -->
 # Contributing
 
 ## Development Workflow
@@ -23,7 +23,7 @@ When adding a new Ansible role:
 
 ## Code Standards
 
-- All files must have `# SPDX-License-Identifier: PMPL-1.0-or-later`
+- All files must have `# SPDX-License-Identifier: MPL-2.0`
 - Ansible tasks must have descriptive `name` fields
 - Variables must be documented with comments in `defaults/main.yml`
 - Use `ansible.builtin.*` fully qualified collection names

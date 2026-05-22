@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # development role - main tasks
@@ -100,7 +100,7 @@
     mode: "0644"
     force: false
     content: |
-      # SPDX-License-Identifier: PMPL-1.0-or-later
+      # SPDX-License-Identifier: MPL-2.0
       # EditorConfig - https://editorconfig.org
       # Global editorconfig for the primary development user.
 

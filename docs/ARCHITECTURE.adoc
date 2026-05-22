@@ -4,7 +4,7 @@ v1.0.0, 2026-02-20
 :toc:
 :toc-title: Contents
 :sectnums:
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 
 == Overview
 

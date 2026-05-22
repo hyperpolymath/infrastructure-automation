@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Group Variables — Shared across ALL hosts
 #
 # Homoiconic: these variables describe the desired system state.
@@ -12,7 +12,7 @@
 infra_org: "hyperpolymath"
 infra_author: "Jonathan D.A. Jewell"
 infra_email: "j.d.a.jewell@open.ac.uk"
-infra_license: "PMPL-1.0-or-later"
+infra_license: "MPL-2.0"
 
 # ── System ────────────────────────────────────────────────────
 # Primary user account

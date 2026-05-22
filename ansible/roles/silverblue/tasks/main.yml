@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # tasks/main.yml — Fedora Silverblue / Atomic Desktop Management.
 #
 # This role manages the specialized lifecycle of immutable Fedora systems. 

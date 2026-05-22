@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # tasks/main.yml — Static File Management (L1).
 #
 # This role ensures that system-wide configuration files and banner 

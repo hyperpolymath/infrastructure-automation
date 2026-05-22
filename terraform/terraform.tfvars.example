@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Example Terraform Variables — copy to terraform.tfvars and customise
 #
 # This file demonstrates the homoiconic pattern: the data IS the infrastructure.

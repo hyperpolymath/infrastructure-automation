@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Local Environment — Podman container provisioning
 #
 # This file demonstrates using the podman_service module

@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 #
 # meta/main.yml - Role metadata for files_managed.
@@ -11,7 +11,7 @@ galaxy_info:
     Manage static configuration files across hosts. Deploys a login banner
     via /etc/motd and custom environment variables via /etc/profile.d/.
     All file content and permissions are controlled declaratively.
-  license: "PMPL-1.0-or-later"
+  license: "MPL-2.0"
   min_ansible_version: "2.16"
   platforms:
     - name: Fedora

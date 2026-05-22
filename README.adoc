@@ -4,7 +4,7 @@ v1.0.0, 2026-02-20
 :toc:
 :toc-title: Contents
 :sectnums:
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 
 == What This Is
 
@@ -91,6 +91,6 @@ just migrate            # Salt migration helper
 
 == License
 
-PMPL-1.0-or-later
+MPL-2.0
 
 Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
