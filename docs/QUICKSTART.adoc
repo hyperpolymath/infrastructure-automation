@@ -3,7 +3,7 @@ Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 v1.0.0, 2026-02-20
 :toc:
 :toc-title: Contents
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: CC-BY-SA-4.0
 
 == 3-Step Start
 
