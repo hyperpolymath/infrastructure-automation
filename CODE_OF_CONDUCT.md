@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: MPL-2.0 -->
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
 # Code of Conduct
 
 This project follows the [Contributor Covenant](https://www.contributor-covenant.org/) v2.1.
