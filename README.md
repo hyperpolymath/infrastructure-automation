@@ -1,0 +1,102 @@
+<!--
+SPDX-License-Identifier: CC-BY-SA-4.0
+SPDX-FileCopyrightText: 2025-2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+-->
+
+# What This Is
+
+Complete infrastructure-as-code for local system management, replacing
+SaltStack with modern Ansible + Terraform.
+
+- **Ansible** manages configuration: packages, users, files, services,
+  firewall, monitoring, networking — everything that runs *on* your
+  host.
+
+- **Terraform** manages container provisioning: declarative lifecycle
+  management of Podman containers with state tracking.
+
+Designed for Fedora Silverblue (immutable OS) but works on any Fedora.
+
+# Quick Start
+
+```bash
+./scripts/bootstrap.sh                         # Install dependencies
+vim ansible/inventory/group_vars/all.yml       # Customise
+just check                                      # Dry run
+just apply                                      # Apply
+```
+
+# Design Principles
+
+Homoiconic  
+Configuration describes itself. `group_vars/all.yml` IS the system
+specification.
+
+Reflexive  
+The system inspects its own state. Run `just` `self-check` or `just`
+`report`.
+
+Dependable  
+All operations are idempotent. Run `just` `check` for safe dry runs.
+
+Secure  
+Firewall-first, least-privilege, Ansible Vault for secrets, rootless
+Podman.
+
+Interoperable  
+Compatible with [HAR](../ambientops/hybrid-automation-router/) for IaC
+translation.
+
+# Repository Structure
+
+```text
+ansible/
+  inventory/group_vars/all.yml   ← EDIT THIS: your desired system state
+  playbooks/site.yml             ← Master playbook
+  roles/                         ← 11 modular roles
+terraform/
+  main.tf                        ← Container provisioning
+  terraform.tfvars.example       ← Container definitions template
+scripts/
+  bootstrap.sh                   ← First-time setup
+  self-check.sh                  ← State validation
+docs/                            ← Architecture, migration, quickstart
+justfile                         ← Task runner recipes
+```
+
+# Ansible Roles
+
+| Role | Purpose | Salt Equivalent |
+|----|----|----|
+| `base_packages` | Essential system packages | `packages.sls` |
+| `users` | User accounts and SSH keys | `users.sls` |
+| `files_managed` | Configuration files (MOTD, profile) | `files.sls` |
+| `services` | Systemd service management | `services.sls` |
+| `firewall` | Firewalld rules | `firewall.sls` |
+| `sudo_config` | Sudo rules via drop-in files | `sudo.sls` |
+| `monitoring` | Monitoring tools and self-monitoring | `monitoring/init.sls` |
+| `networking` | /etc/hosts, hostname, DNS | `networking/init.sls` |
+| `podman_containers` | Podman container management | `containers/init.sls` |
+| `silverblue` | Immutable OS adaptations | *(new)* |
+| `development` | Developer tools (asdf, runtimes) | *(new)* |
+
+# Common Commands
+
+```bash
+just apply              # Apply all configuration
+just check              # Dry run (show changes without applying)
+just apply-tags security # Apply only firewall + sudo
+just self-check         # Validate current system state
+just report             # View last change report
+just tf-plan            # Preview container changes
+just tf-apply           # Provision containers
+just bootstrap          # First-time setup
+just migrate            # Salt migration helper
+```
+
+# License
+
+MPL-2.0
+
+Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath)
+\<[j.d.a.jewell@open.ac](j.d.a.jewell@open.ac).uk\>
