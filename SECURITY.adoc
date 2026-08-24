@@ -1,0 +1,32 @@
+== Security Policy
+
+=== Reporting Vulnerabilities
+
+Report security issues to: j.d.a.jewell@open.ac.uk
+
+Do NOT open public issues for security vulnerabilities.
+
+=== Security Model
+
+This repository manages infrastructure configuration. Security
+considerations:
+
+[arabic]
+. *Secrets*: Use Ansible Vault for all sensitive data. Never commit
+plaintext secrets.
+. *Access*: Ansible connects via SSH or local connection. Protect SSH
+keys.
+. *Privilege*: Tasks escalate to root only when necessary. Sudo rules
+use drop-in files.
+. *Containers*: Podman runs rootless (user namespace isolation).
+. *Firewall*: Default deny policy. Only explicitly allowed services are
+accessible.
+. *Audit*: The reflexive_reporter callback logs all state changes.
+
+=== Supported Versions
+
+[cols=",",options="header",]
+|===
+|Version |Supported
+|1.0.x |Yes
+|===

@@ -1,8 +1,8 @@
-# TOPOLOGY — infrastructure-automation
+== TOPOLOGY — infrastructure-automation
 
-## System Architecture
+=== System Architecture
 
-```
+....
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    infrastructure-automation                        │
 │                                                                     │
@@ -55,11 +55,11 @@
 │  firewalld       │          │  Managed via      │
 │  users/groups    │          │  Docker-compat API │
 └──────────────────┘          └──────────────────┘
-```
+....
 
-## Completion Dashboard
+=== Completion Dashboard
 
-```
+....
 Component               Progress
 ────────────────────────────────────────────────
 Ansible Roles           [██████████] 100%  11/11 roles
@@ -74,11 +74,11 @@ Justfile                [██████████] 100%  all recipes
 RSR Compliance          [██████████] 100%  SCM + manifest + template
 ────────────────────────────────────────────────
 Overall                 [██████████] 100%
-```
+....
 
-## Key Dependencies
+=== Key Dependencies
 
-```
+....
 Salt → Ansible Role Mapping
 ────────────────────────────────────
 Salt State              Ansible Role
@@ -104,4 +104,4 @@ Ansible configures container hosts
   ↓ handlers restart containers
 Terraform tracks lifecycle state
 ────────────────────────────────────
-```
+....
