@@ -1,0 +1,30 @@
+== Contributing
+
+=== Development Workflow
+
+[arabic]
+. Read `+0-AI-MANIFEST.a2ml+` for project conventions
+. Read `+.machine_readable/STATE.scm+` for current status
+. Make changes following existing patterns
+. Test with `+just check+` (dry run)
+. Validate with `+just lint+`
+. Run `+just self-check+` to verify
+
+=== Role Development
+
+When adding a new Ansible role:
+
+[arabic]
+. Create directory structure: `+tasks/+`, `+defaults/+`, `+meta/+`
+. Add `+meta/main.yml+` with role metadata (homoiconic self-description)
+. Add `+defaults/main.yml+` with documented default variables
+. Ensure all tasks are idempotent
+. Add the role to the appropriate playbook
+. Update `+TOPOLOGY.md+`
+
+=== Code Standards
+
+* All files must have `+# SPDX-License-Identifier: CC-BY-SA-4.0+`
+* Ansible tasks must have descriptive `+name+` fields
+* Variables must be documented with comments in `+defaults/main.yml+`
+* Use `+ansible.builtin.*+` fully qualified collection names
