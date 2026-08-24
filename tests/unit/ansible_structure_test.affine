@@ -1,21 +1,18 @@
 // SPDX-License-Identifier: MPL-2.0
-// Ported via Harvard Engine mechanical processor
+// Ported via Harvard Engine (Semantic pass)
 
 module ansible_structure_test;
 
-// TODO: Complete semantic implementation
-
-/* === ORIGINAL TYPESCRIPT CONTEXT ===
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 // Unit tests — Ansible playbook and role structure validation
 
 import { assertEquals } from "https://deno.land/std@0.220.0/assert/mod.ts";
 
-const REPO_ROOT = new URL("../..", import.meta.url).pathname;
+let REPO_ROOT = new URL("../..", import.meta.url).pathname;
 
 Deno.test("Unit: All playbook files exist", async () => {
-  const playbooks = [
+  let playbooks = [
     "site.yml",
     "base.yml",
     "security.yml",
@@ -25,14 +22,14 @@ Deno.test("Unit: All playbook files exist", async () => {
   ];
 
   for (const playbook of playbooks) {
-    const path = `${REPO_ROOT}/ansible/playbooks/${playbook}`;
-    const stat = await Deno.stat(path);
+    let path = `${REPO_ROOT}/ansible/playbooks/${playbook}`;
+    let stat = await Deno.stat(path);
     assertEquals(stat.isFile, true, `Playbook ${playbook} should exist`);
   }
 });
 
 Deno.test("Unit: All critical roles exist", async () => {
-  const roles = [
+  let roles = [
     "base_packages",
     "users",
     "firewall",
@@ -47,18 +44,18 @@ Deno.test("Unit: All critical roles exist", async () => {
   ];
 
   for (const role of roles) {
-    const path = `${REPO_ROOT}/ansible/roles/${role}`;
-    const stat = await Deno.stat(path);
+    let path = `${REPO_ROOT}/ansible/roles/${role}`;
+    let stat = await Deno.stat(path);
     assertEquals(stat.isDirectory, true, `Role directory ${role} should exist`);
   }
 });
 
 Deno.test("Unit: All roles have tasks/main.yml", async () => {
-  const rolesDir = `${REPO_ROOT}/ansible/roles`;
+  let rolesDir = `${REPO_ROOT}/ansible/roles`;
   for await (const entry of Deno.readDir(rolesDir)) {
     if (entry.isDirectory) {
-      const taskFile = `${rolesDir}/${entry.name}/tasks/main.yml`;
-      const stat = await Deno.stat(taskFile);
+      let taskFile = `${rolesDir}/${entry.name}/tasks/main.yml`;
+      let stat = await Deno.stat(taskFile);
       assertEquals(
         stat.isFile,
         true,
@@ -69,17 +66,17 @@ Deno.test("Unit: All roles have tasks/main.yml", async () => {
 });
 
 Deno.test("Unit: Inventory files exist", async () => {
-  const inventory = `${REPO_ROOT}/ansible/inventory/hosts.yml`;
-  const stat = await Deno.stat(inventory);
+  let inventory = `${REPO_ROOT}/ansible/inventory/hosts.yml`;
+  let stat = await Deno.stat(inventory);
   assertEquals(stat.isFile, true, "Inventory hosts.yml should exist");
 
-  const groupVars = `${REPO_ROOT}/ansible/inventory/group_vars`;
-  const gvStat = await Deno.stat(groupVars);
+  let groupVars = `${REPO_ROOT}/ansible/inventory/group_vars`;
+  let gvStat = await Deno.stat(groupVars);
   assertEquals(gvStat.isDirectory, true, "group_vars directory should exist");
 });
 
 Deno.test("Unit: Playbook files are non-empty YAML", async () => {
-  const playbooks = [
+  let playbooks = [
     "site.yml",
     "base.yml",
     "security.yml",
@@ -89,8 +86,8 @@ Deno.test("Unit: Playbook files are non-empty YAML", async () => {
   ];
 
   for (const playbook of playbooks) {
-    const path = `${REPO_ROOT}/ansible/playbooks/${playbook}`;
-    const content = await Deno.readTextFile(path);
+    let path = `${REPO_ROOT}/ansible/playbooks/${playbook}`;
+    let content = await Deno.readTextFile(path);
     assertEquals(content.length > 0, true, `${playbook} should not be empty`);
     assertEquals(
       content.includes("---") || content.includes(":"),
@@ -101,11 +98,11 @@ Deno.test("Unit: Playbook files are non-empty YAML", async () => {
 });
 
 Deno.test("Unit: All role tasks are non-empty", async () => {
-  const rolesDir = `${REPO_ROOT}/ansible/roles`;
+  let rolesDir = `${REPO_ROOT}/ansible/roles`;
   for await (const entry of Deno.readDir(rolesDir)) {
     if (entry.isDirectory) {
-      const taskFile = `${rolesDir}/${entry.name}/tasks/main.yml`;
-      const content = await Deno.readTextFile(taskFile);
+      let taskFile = `${rolesDir}/${entry.name}/tasks/main.yml`;
+      let content = await Deno.readTextFile(taskFile);
       assertEquals(
         content.length > 0,
         true,
@@ -116,11 +113,11 @@ Deno.test("Unit: All role tasks are non-empty", async () => {
 });
 
 Deno.test("Unit: All roles have meta/main.yml", async () => {
-  const rolesDir = `${REPO_ROOT}/ansible/roles`;
+  let rolesDir = `${REPO_ROOT}/ansible/roles`;
   for await (const entry of Deno.readDir(rolesDir)) {
     if (entry.isDirectory) {
-      const metaFile = `${rolesDir}/${entry.name}/meta/main.yml`;
-      const stat = await Deno.stat(metaFile);
+      let metaFile = `${rolesDir}/${entry.name}/meta/main.yml`;
+      let stat = await Deno.stat(metaFile);
       assertEquals(
         stat.isFile,
         true,
@@ -131,9 +128,8 @@ Deno.test("Unit: All roles have meta/main.yml", async () => {
 });
 
 Deno.test("Unit: ansible.cfg exists", async () => {
-  const ansibleCfg = `${REPO_ROOT}/ansible/ansible.cfg`;
-  const stat = await Deno.stat(ansibleCfg);
+  let ansibleCfg = `${REPO_ROOT}/ansible/ansible.cfg`;
+  let stat = await Deno.stat(ansibleCfg);
   assertEquals(stat.isFile, true, "ansible.cfg should exist");
 });
 
-==================================== */

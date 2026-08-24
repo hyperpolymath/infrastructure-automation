@@ -1,21 +1,18 @@
 // SPDX-License-Identifier: MPL-2.0
-// Ported via Harvard Engine mechanical processor
+// Ported via Harvard Engine (Semantic pass)
 
 module security_aspect_test;
 
-// TODO: Complete semantic implementation
-
-/* === ORIGINAL TYPESCRIPT CONTEXT ===
 // SPDX-License-Identifier: MPL-2.0
 // Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
 // Security aspect tests — Defense-in-depth dimension checks
 
 import { assertEquals } from "https://deno.land/std@0.220.0/assert/mod.ts";
 
-const REPO_ROOT = new URL("../..", import.meta.url).pathname;
+let REPO_ROOT = new URL("../..", import.meta.url).pathname;
 
 Deno.test("Aspect: No hardcoded SSH private keys in repository", async () => {
-  const sshPatterns = [
+  let sshPatterns = [
     /-----BEGIN RSA PRIVATE KEY-----/,
     /-----BEGIN OPENSSH PRIVATE KEY-----/,
     /-----BEGIN EC PRIVATE KEY-----/,
@@ -40,7 +37,7 @@ Deno.test("Aspect: No hardcoded SSH private keys in repository", async () => {
     }
 
     try {
-      const content = await Deno.readTextFile(entry);
+      let content = await Deno.readTextFile(entry);
       for (const pattern of sshPatterns) {
         assertEquals(
           !pattern.test(content),
@@ -58,18 +55,18 @@ Deno.test("Aspect: No hardcoded SSH private keys in repository", async () => {
 });
 
 Deno.test("Aspect: No AWS/GCP access keys in Terraform files", async () => {
-  const keyPatterns = [
+  let keyPatterns = [
     /aws_access_key_id\s*=\s*['"][A-Z0-9]{20}['"]/, // AWS key format
     /aws_secret_access_key\s*=\s*['"][A-Za-z0-9\/+]{40}['"]/, // AWS secret format
     /AKIAIOSFODNN7EXAMPLE/, // AWS example key (should not be present)
     /AIzaSy[A-Za-z0-9_-]{33}/, // GCP API key format
   ];
 
-  const terraformDir = `${REPO_ROOT}/terraform`;
+  let terraformDir = `${REPO_ROOT}/terraform`;
   try {
     for await (const entry of Deno.readDir(terraformDir)) {
       if (entry.isFile && entry.name.endsWith(".tf")) {
-        const content = await Deno.readTextFile(
+        let content = await Deno.readTextFile(
           `${terraformDir}/${entry.name}`,
         );
 
@@ -90,17 +87,17 @@ Deno.test("Aspect: No AWS/GCP access keys in Terraform files", async () => {
 });
 
 Deno.test("Aspect: No plaintext HTTP URLs in critical configs", async () => {
-  const criticalFiles = [
+  let criticalFiles = [
     `${REPO_ROOT}/ansible/ansible.cfg`,
     `${REPO_ROOT}/terraform/providers.tf`,
   ];
 
   for (const file of criticalFiles) {
     try {
-      const content = await Deno.readTextFile(file);
+      let content = await Deno.readTextFile(file);
       // Check for http:// (should use https)
       // Exclude http comments and documentation
-      const hasInsecureHttp = /\bhttp:\/\/[^\s#"']+\.(com|org|net|io)/gi.test(
+      let hasInsecureHttp = /\bhttp:\/\/[^\s#"']+\.(com|org|net|io)/gi.test(
         content,
       );
 
@@ -118,12 +115,12 @@ Deno.test("Aspect: No plaintext HTTP URLs in critical configs", async () => {
 });
 
 Deno.test("Aspect: Firewall defaults to deny policy", async () => {
-  const firewallTasksFile =
+  let firewallTasksFile =
     `${REPO_ROOT}/ansible/roles/firewall/tasks/main.yml`;
-  const content = await Deno.readTextFile(firewallTasksFile);
+  let content = await Deno.readTextFile(firewallTasksFile);
 
   // Check for default deny policy or allow-only approach
-  const hasDenyDefault =
+  let hasDenyDefault =
     content.includes("default: DROP") ||
     content.includes("zone:") ||
     content.includes("firewall");
@@ -136,8 +133,8 @@ Deno.test("Aspect: Firewall defaults to deny policy", async () => {
 });
 
 Deno.test("Aspect: No ignore_errors in security playbooks", async () => {
-  const securityPlaybook = `${REPO_ROOT}/ansible/playbooks/security.yml`;
-  const content = await Deno.readTextFile(securityPlaybook);
+  let securityPlaybook = `${REPO_ROOT}/ansible/playbooks/security.yml`;
+  let content = await Deno.readTextFile(securityPlaybook);
 
   assertEquals(
     !content.includes("ignore_errors: true"),
@@ -147,8 +144,8 @@ Deno.test("Aspect: No ignore_errors in security playbooks", async () => {
 });
 
 Deno.test("Aspect: Security playbook uses become for privileged operations", async () => {
-  const securityPlaybook = `${REPO_ROOT}/ansible/playbooks/security.yml`;
-  const content = await Deno.readTextFile(securityPlaybook);
+  let securityPlaybook = `${REPO_ROOT}/ansible/playbooks/security.yml`;
+  let content = await Deno.readTextFile(securityPlaybook);
 
   assertEquals(
     content.includes("become") || content.includes("sudo"),
@@ -158,8 +155,8 @@ Deno.test("Aspect: Security playbook uses become for privileged operations", asy
 });
 
 Deno.test("Aspect: No debug mode enabled in production configs", async () => {
-  const ansibleCfg = `${REPO_ROOT}/ansible/ansible.cfg`;
-  const content = await Deno.readTextFile(ansibleCfg);
+  let ansibleCfg = `${REPO_ROOT}/ansible/ansible.cfg`;
+  let content = await Deno.readTextFile(ansibleCfg);
 
   assertEquals(
     !content.includes("debug = True"),
@@ -169,10 +166,10 @@ Deno.test("Aspect: No debug mode enabled in production configs", async () => {
 });
 
 Deno.test("Aspect: Sudo configuration restricts commands", async () => {
-  const sudoPath = `${REPO_ROOT}/ansible/roles/sudo_config/tasks/main.yml`;
-  const content = await Deno.readTextFile(sudoPath);
+  let sudoPath = `${REPO_ROOT}/ansible/roles/sudo_config/tasks/main.yml`;
+  let content = await Deno.readTextFile(sudoPath);
 
-  const hasCommandRestrictions =
+  let hasCommandRestrictions =
     content.includes("sudoers") ||
     content.includes("NOPASSWD") ||
     content.includes("Cmnd_Alias");
@@ -184,8 +181,8 @@ Deno.test("Aspect: Sudo configuration restricts commands", async () => {
   );
 });
 
-function isTextFile(path: string): boolean {
-  const binaryExtensions = [
+fn isTextFile(path: string): boolean {
+  let binaryExtensions = [
     ".pyc",
     ".pyo",
     ".o",
@@ -208,7 +205,7 @@ function isTextFile(path: string): boolean {
 async function* walkFiles(path: string): AsyncGenerator<string> {
   try {
     for await (const entry of Deno.readDir(path)) {
-      const fullPath = `${path}/${entry.name}`;
+      let fullPath = `${path}/${entry.name}`;
 
       if (
         entry.name.startsWith(".") ||
@@ -231,4 +228,3 @@ async function* walkFiles(path: string): AsyncGenerator<string> {
   }
 }
 
-==================================== */
